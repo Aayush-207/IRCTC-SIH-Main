@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -22,6 +23,7 @@ const Navigation = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+  const isEnquiryRouteActive = ["/train-search", "/pnr-status", "/at-station"].some((path) => isActive(path));
 
   return (
     <nav className="sticky top-0 z-50 bg-gradient-to-r from-primary to-railway-orange text-white shadow-md">
@@ -41,12 +43,20 @@ const Navigation = () => {
               .filter((item) => !["/train-search", "/pnr-status", "/at-station"].includes(item.href))
               .map((item) => {
                 const Icon = item.icon;
+                const active = isActive(item.href);
                 return (
-                  <Link key={item.href} to={item.href}>
+                  <Link key={item.href} to={item.href} className="relative block rounded-md">
+                    {active && (
+                      <motion.span
+                        layoutId="desktop-nav-active-pill"
+                        transition={{ type: "spring", stiffness: 420, damping: 36, mass: 0.75 }}
+                        className="absolute inset-0 rounded-md bg-white/20"
+                      />
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`h-8 flex items-center px-2 text-white hover:bg-white/10 ${isActive(item.href) ? 'bg-white/15' : ''}`}
+                      className="relative z-10 h-8 flex items-center px-2 text-white hover:bg-white/10"
                     >
                       <Icon className="h-4 w-4" />
                       <span className="hidden lg:inline">{item.label}</span>
@@ -58,10 +68,19 @@ const Navigation = () => {
             {/* Grouped menu to reduce overflow */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                                 <Button variant="ghost" size="sm" className={`h-8 flex items-center px-2 text-white hover:bg-white/10 ${["/train-search", "/pnr-status", "/at-station"].some((p) => isActive(p as string)) ? 'bg-white/15' : ''}`}>
-                  <Search className="h-4 w-4" />
-                  <span className="hidden lg:inline">Enquiries</span>
-                </Button>
+                <div className="relative rounded-md">
+                  {isEnquiryRouteActive && (
+                    <motion.span
+                      layoutId="desktop-nav-active-pill"
+                      transition={{ type: "spring", stiffness: 420, damping: 36, mass: 0.75 }}
+                      className="absolute inset-0 rounded-md bg-white/20"
+                    />
+                  )}
+                  <Button variant="ghost" size="sm" className="relative z-10 h-8 flex items-center px-2 text-white hover:bg-white/10">
+                    <Search className="h-4 w-4" />
+                    <span className="hidden lg:inline">Enquiries</span>
+                  </Button>
+                </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <Link to="/train-search">

@@ -2,7 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useRef } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Navigation from "./components/Navigation";
 import Home from "./pages/Home";
 import BookTickets from "./pages/BookTickets";
@@ -20,6 +22,74 @@ import ViewStation from "./pages/ViewStation";
 
 const queryClient = new QueryClient();
 
+const ROUTE_ORDER = [
+  "/",
+  "/book-tickets",
+  "/train-search",
+  "/pnr-status",
+  "/live-status",
+  "/at-station",
+  "/pantry-cart",
+  "/ask-disha",
+  "/view-station",
+  "/login",
+  "/signup",
+];
+
+const AnimatedRoutes = () => {
+  const location = useLocation();
+  const prefersReducedMotion = useReducedMotion();
+  const previousPathRef = useRef(location.pathname);
+  const directionRef = useRef(1);
+
+  if (previousPathRef.current !== location.pathname) {
+    const previousIndex = ROUTE_ORDER.indexOf(previousPathRef.current);
+    const nextIndex = ROUTE_ORDER.indexOf(location.pathname);
+
+    if (previousIndex !== -1 && nextIndex !== -1) {
+      directionRef.current = nextIndex >= previousIndex ? 1 : -1;
+    }
+
+    previousPathRef.current = location.pathname;
+  }
+
+  const direction = directionRef.current;
+
+  const initial = prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: direction === 1 ? -72 : 72 };
+  const animate = { opacity: 1, x: 0 };
+  const exit = prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: direction === 1 ? 72 : -72 };
+
+  return (
+    <main className="route-transition-viewport">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={location.pathname}
+          initial={initial}
+          animate={animate}
+          exit={exit}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
+          className="route-transition-shell"
+        >
+          <Routes location={location}>
+            <Route path="/" element={<Home />} />
+            <Route path="/book-tickets" element={<BookTickets />} />
+            <Route path="/train-search" element={<TrainSearch />} />
+            <Route path="/pnr-status" element={<PNRStatus />} />
+            <Route path="/live-status" element={<LiveStatus />} />
+            <Route path="/at-station" element={<AtStation />} />
+            <Route path="/pantry-cart" element={<PantryCart />} />
+            <Route path="/ask-disha" element={<AskDisha />} />
+            <Route path="/view-station" element={<ViewStation />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </motion.div>
+      </AnimatePresence>
+    </main>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -27,20 +97,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Navigation />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/book-tickets" element={<BookTickets />} />
-          <Route path="/train-search" element={<TrainSearch />} />
-          <Route path="/pnr-status" element={<PNRStatus />} />
-          <Route path="/live-status" element={<LiveStatus />} />
-          <Route path="/at-station" element={<AtStation />} />
-          <Route path="/pantry-cart" element={<PantryCart />} />
-          <Route path="/ask-disha" element={<AskDisha />} />
-          <Route path="/view-station" element={<ViewStation />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AnimatedRoutes />
         <AskDishaFab />
       </BrowserRouter>
     </TooltipProvider>

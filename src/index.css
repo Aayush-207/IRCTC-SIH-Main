@@ -164,4 +164,12 @@
   .icon-breathe {
     animation: icon-breathe 1.8s ease-in-out infinite;
   }
+
+  .route-transition-viewport {
+    overflow-x: clip;
+  }
+
+  .route-transition-shell {
+    will-change: transform, opacity;
+  }
 }
