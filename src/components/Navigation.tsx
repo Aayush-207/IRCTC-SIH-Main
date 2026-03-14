@@ -1,32 +1,27 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, Train, Search, MapPin, Clock, Building, ShoppingCart, MessageCircle, User } from "lucide-react";
+import { Menu, User } from "lucide-react";
 import railwaysLogo from "@/assets/railways-logo.jpg";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const isHome = location.pathname === "/";
 
   const navItems = [
-    { href: "/", label: "Home", icon: Train },
-    // Removed Book menu item; booking is now handled from Home page
-    { href: "/train-search", label: "Search", icon: Search },
-    { href: "/pnr-status", label: "PNR", icon: MapPin },
-    { href: "/live-status", label: "Live", icon: Clock },
-    { href: "/at-station", label: "Station", icon: Building },
-    { href: "/pantry-cart", label: "Pantry", icon: ShoppingCart },
-    { href: "/view-station", label: "View Station", icon: Building },
+    { href: "/", label: "Home" },
+    { href: "/live-status", label: "Live" },
+    { href: "/pantry-cart", label: "Pantry" },
+    { href: "/view-station", label: "View Station" },
+    { href: "/train-search", label: "Enquiries" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
-  const isEnquiryRouteActive = ["/train-search", "/pnr-status", "/at-station"].some((path) => isActive(path));
 
   return (
-    <nav className="sticky top-0 z-50 bg-gradient-to-r from-primary to-railway-orange text-white shadow-md">
+    <nav className={`${isHome ? "fixed top-0 left-0 w-full" : "sticky top-0"} z-50 text-white ${isHome ? "bg-transparent" : "bg-gradient-to-r from-primary to-railway-orange shadow-md"}`}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -38,68 +33,18 @@ const Navigation = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-5">
-            {navItems
-              .filter((item) => !["/train-search", "/pnr-status", "/at-station"].includes(item.href))
-              .map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.href);
-                return (
-                  <Link key={item.href} to={item.href} className="relative block rounded-md">
-                    {active && (
-                      <motion.span
-                        layoutId="desktop-nav-active-pill"
-                        transition={{ type: "spring", stiffness: 420, damping: 36, mass: 0.75 }}
-                        className="absolute inset-0 rounded-md bg-white/20"
-                      />
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="relative z-10 h-8 flex items-center px-2 text-white hover:bg-white/10"
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="hidden lg:inline">{item.label}</span>
-                    </Button>
-                  </Link>
-                );
-              })}
-
-            {/* Grouped menu to reduce overflow */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="relative rounded-md">
-                  {isEnquiryRouteActive && (
-                    <motion.span
-                      layoutId="desktop-nav-active-pill"
-                      transition={{ type: "spring", stiffness: 420, damping: 36, mass: 0.75 }}
-                      className="absolute inset-0 rounded-md bg-white/20"
-                    />
-                  )}
-                  <Button variant="ghost" size="sm" className="relative z-10 h-8 flex items-center px-2 text-white hover:bg-white/10">
-                    <Search className="h-4 w-4" />
-                    <span className="hidden lg:inline">Enquiries</span>
-                  </Button>
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <Link to="/train-search">
-                  <DropdownMenuItem className="cursor-pointer">
-                    Train Search
-                  </DropdownMenuItem>
-                </Link>
-                <Link to="/pnr-status">
-                  <DropdownMenuItem className="cursor-pointer">
-                    PNR Status
-                  </DropdownMenuItem>
-                </Link>
-                <Link to="/at-station">
-                  <DropdownMenuItem className="cursor-pointer">
-                    At Station
-                  </DropdownMenuItem>
-                </Link>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="hidden lg:flex items-center space-x-2">
+            {navItems.map((item) => (
+              <Link key={item.href} to={item.href}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`text-white hover:bg-black/35 ${isActive(item.href) ? "bg-black/45" : ""}`}
+                >
+                  {item.label}
+                </Button>
+              </Link>
+            ))}
           </div>
 
           {/* Auth Buttons */}
@@ -111,7 +56,7 @@ const Navigation = () => {
               </Button>
             </Link>
             <Link to="/signup">
-              <Button size="sm" className="bg-white text-primary hover:bg-white/90">
+              <Button size="sm" className="bg-white text-primary hover:bg-white/90 shadow-sm">
                 Sign Up
               </Button>
             </Link>
@@ -133,7 +78,6 @@ const Navigation = () => {
               </SheetHeader>
               <div className="mt-8 space-y-2">
                 {navItems.map((item) => {
-                  const Icon = item.icon;
                   return (
                     <Link
                       key={item.href}
@@ -141,11 +85,10 @@ const Navigation = () => {
                       onClick={() => setIsOpen(false)}
                       className="block"
                     >
-                                          <Button
-                      variant={isActive(item.href) ? "secondary" : "ghost"}
-                      className="w-full justify-start space-x-2 text-white hover:bg-white/10"
-                    >
-                        <Icon className="h-4 w-4" />
+                      <Button
+                        variant={isActive(item.href) ? "secondary" : "ghost"}
+                        className="w-full justify-start"
+                      >
                         <span>{item.label}</span>
                       </Button>
                     </Link>

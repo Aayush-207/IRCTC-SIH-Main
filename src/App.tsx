@@ -14,8 +14,7 @@ import LiveStatus from "./pages/LiveStatus";
 import AtStation from "./pages/AtStation";
 import PantryCart from "./pages/PantryCart";
 import AskDisha from "./pages/AskDisha";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import AskDishaFab from "./components/AskDishaFab";
 import ViewStation from "./pages/ViewStation";
@@ -39,6 +38,7 @@ const ROUTE_ORDER = [
 const AnimatedRoutes = () => {
   const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
+  const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
   const previousPathRef = useRef(location.pathname);
   const directionRef = useRef(1);
 
@@ -55,15 +55,16 @@ const AnimatedRoutes = () => {
 
   const direction = directionRef.current;
 
-  const initial = prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: direction === 1 ? -72 : 72 };
+  const initial = prefersReducedMotion || isAuthRoute ? { opacity: 1, x: 0 } : { opacity: 0, x: direction === 1 ? -72 : 72 };
   const animate = { opacity: 1, x: 0 };
-  const exit = prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: direction === 1 ? 72 : -72 };
+  const exit = prefersReducedMotion || isAuthRoute ? { opacity: 1, x: 0 } : { opacity: 0, x: direction === 1 ? 72 : -72 };
+  const routeTransitionKey = isAuthRoute ? "auth" : location.pathname;
 
   return (
     <main className="route-transition-viewport">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
-          key={location.pathname}
+          key={routeTransitionKey}
           initial={initial}
           animate={animate}
           exit={exit}
@@ -80,8 +81,8 @@ const AnimatedRoutes = () => {
             <Route path="/pantry-cart" element={<PantryCart />} />
             <Route path="/ask-disha" element={<AskDisha />} />
             <Route path="/view-station" element={<ViewStation />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Auth />} />
+            <Route path="/signup" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </motion.div>
