@@ -17,7 +17,7 @@ const Navigation = () => {
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/?panel=live", label: "Live" },
-    { href: "/?panel=pantry", label: "Pantry" },
+    { href: "/?panel=bookings", label: "Bookings" },
     { href: "/?panel=view-station", label: "View Station" },
     { href: "/train-search", label: "Enquiries" },
   ];

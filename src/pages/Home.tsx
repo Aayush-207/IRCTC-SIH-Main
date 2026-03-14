@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Clock3, Search } from "lucide-react";
+import { Clock3, Search, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import wooxBanner1 from "@/assets/woox-banner-01.jpg";
 import wooxBanner2 from "@/assets/woox-banner-02.jpg";
@@ -17,7 +17,7 @@ const SLIDE_TRANSITION_MS = 750;
 const PANEL_ORDER: Record<string, number> = {
   "": 0,
   live: 1,
-  pantry: 2,
+  bookings: 2,
   "view-station": 3,
 };
 
@@ -45,8 +45,6 @@ const Home = () => {
   const [date, setDate] = useState<string>(toInputDate(today));
   const [liveTrainNumber, setLiveTrainNumber] = useState("");
   const [liveDate, setLiveDate] = useState<string>(toInputDate(today));
-  const [pantryTrainNumber, setPantryTrainNumber] = useState("");
-  const [pantrySeat, setPantrySeat] = useState("");
   const [stationQuery, setStationQuery] = useState("Dadar");
   const [liveError, setLiveError] = useState<string | null>(null);
   const [activeBanner, setActiveBanner] = useState(0);
@@ -55,7 +53,21 @@ const Home = () => {
 
   const banners = [wooxBanner1, wooxBanner2, wooxBanner3, wooxBanner4];
   const panelParam = params.get("panel");
-  const activePanel = panelParam === "live" || panelParam === "pantry" || panelParam === "view-station" ? panelParam : null;
+  const activePanel = panelParam === "live" || panelParam === "bookings" || panelParam === "view-station" ? panelParam : null;
+  const dummyBooking = {
+    bookingId: "IRCTC-9Q2M7K",
+    pnr: "6523189745",
+    trainNumber: "12301",
+    trainName: "Rajdhani Express",
+    journeyDate: "2026-03-14",
+    from: "HOWRAH JN",
+    to: "NEW DELHI",
+    coach: "B2",
+    seat: "36",
+    classType: "3A",
+    quota: "GN",
+    status: "Confirmed",
+  };
   const previousPanelRef = useRef<string | null>(null);
   const previousPanel = previousPanelRef.current;
   const previousPanelOrder = PANEL_ORDER[previousPanel ?? ""] ?? 0;
@@ -140,16 +152,8 @@ const Home = () => {
     navigate(`/live-status?trainNumber=${encodeURIComponent(query)}&date=${encodeURIComponent(liveDate)}`);
   };
 
-  const openPantry = () => {
-    if (!pantryTrainNumber.trim() || !pantrySeat.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter both train number and coach/seat",
-        variant: "destructive",
-      });
-      return;
-    }
-    navigate(`/pantry-cart?trainNumber=${encodeURIComponent(pantryTrainNumber.trim())}&seatNumber=${encodeURIComponent(pantrySeat.trim())}`);
+  const openPantryFromBooking = () => {
+    navigate(`/pantry-cart?trainNumber=${encodeURIComponent(dummyBooking.trainNumber)}&seatNumber=${encodeURIComponent(`${dummyBooking.coach}/${dummyBooking.seat}`)}`);
   };
 
   const openViewStation = () => {
@@ -260,14 +264,14 @@ const Home = () => {
               exit={{ opacity: 0, x: panelDirection > 0 ? -130 : 130 }}
               transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="live-panel-shell">
+              <div className={`live-panel-shell ${activePanel === "bookings" ? "bookings-panel-shell" : ""}`}>
                 <h3 className="live-panel-title">
                   {activePanel === "live" && "Live Train Status"}
-                  {activePanel === "pantry" && "Pantry Cart"}
+                  {activePanel === "bookings" && "My Bookings"}
                   {activePanel === "view-station" && "View Station"}
                 </h3>
 
-                <div className="live-panel-box">
+                <div className={`live-panel-box ${activePanel === "bookings" ? "bookings-panel-box" : ""}`}>
                   {activePanel === "live" && (
                     <>
                       <div className="live-panel-fields">
@@ -301,44 +305,45 @@ const Home = () => {
                     </>
                   )}
 
-                  {activePanel === "pantry" && (
+                  {activePanel === "bookings" && (
                     <>
-                      <div className="live-panel-fields">
-                        <div className="live-panel-field">
-                          <span>Train Number</span>
-                          <Input
-                            type="text"
-                            value={pantryTrainNumber}
-                            onChange={(e) => setPantryTrainNumber(e.target.value.replace(/\D/g, "").slice(0, 5))}
-                            placeholder="e.g. 12951"
-                            className="live-panel-input"
-                          />
+                      <div className="bookings-featured-card">
+                        <div className="bookings-featured-head">
+                          <span>Upcoming Journey</span>
+                          <span className="bookings-status-pill">{dummyBooking.status}</span>
                         </div>
-                        <div className="live-panel-field">
-                          <span>Coach / Seat</span>
-                          <Input
-                            type="text"
-                            value={pantrySeat}
-                            onChange={(e) => setPantrySeat(e.target.value)}
-                            placeholder="e.g. B2 / 36"
-                            className="live-panel-input"
-                          />
+
+                        <div className="bookings-featured-grid">
+                          <div className="bookings-col-left">
+                            <p><strong>{dummyBooking.trainName}</strong> ({dummyBooking.trainNumber})</p>
+                            <p>{dummyBooking.from} to {dummyBooking.to}</p>
+                            <p>Journey Date: {dummyBooking.journeyDate}</p>
+                          </div>
+
+                          <div className="bookings-col-center">
+                            <p>PNR: {dummyBooking.pnr}</p>
+                            <p>Coach/Seat: {dummyBooking.coach}/{dummyBooking.seat}</p>
+                            <p>Class: {dummyBooking.classType} • Quota: {dummyBooking.quota}</p>
+                            <p>Booking ID: {dummyBooking.bookingId}</p>
+                          </div>
+
+                          <div className="bookings-col bookings-col-right">
+                            <div className="bookings-info-inline bookings-info-inline-right">
+                              <div className="live-panel-info-title"><Clock3 className="h-4 w-4" /> Meal Service</div>
+                              <p>Seat delivery available for this booking.</p>
+                            </div>
+
+                            <Button type="button" className="bookings-meal-btn" onClick={openPantryFromBooking}>
+                              Book Your Meal
+                            </Button>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="live-panel-info">
-                        <div className="live-panel-info-title"><Clock3 className="h-4 w-4" /> Delivery Information</div>
-                        <ul>
-                          <li>Food will be delivered to your seat</li>
-                          <li>Delivery time: 30-45 minutes</li>
-                          <li>Payment on delivery available</li>
-                          <li>Order tracking via SMS</li>
-                        </ul>
-                      </div>
+                      <button type="button" className="bookings-trash-side" aria-label="Delete booking">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
 
-                      <Button type="button" className="live-panel-track-btn" onClick={openPantry}>
-                        View Menu and Order Food
-                      </Button>
 
                     </>
                   )}
