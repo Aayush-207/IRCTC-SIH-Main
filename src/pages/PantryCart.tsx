@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingCart, Plus, Minus, Clock, Check, Trash2, Smartphone, Banknote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSearchParams } from "react-router-dom";
 
 interface CartItem {
   id: string;
@@ -17,6 +18,7 @@ interface CartItem {
 }
 
 const PantryCart = () => {
+  const [searchParams] = useSearchParams();
   const [trainNumber, setTrainNumber] = useState("");
   const [seatNumber, setSeatNumber] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -99,6 +101,14 @@ const PantryCart = () => {
       confirmationRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [orderPlaced]);
+
+  // Prefill details when redirected from the Home pantry panel
+  useEffect(() => {
+    const trainFromUrl = searchParams.get("trainNumber")?.trim() || "";
+    const seatFromUrl = searchParams.get("seatNumber")?.trim() || "";
+    if (trainFromUrl) setTrainNumber(trainFromUrl);
+    if (seatFromUrl) setSeatNumber(seatFromUrl);
+  }, [searchParams]);
 
   const handleAddToCart = (item: any) => {
     const existingItem = cart.find(cartItem => cartItem.id === item.id);

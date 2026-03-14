@@ -11,7 +11,8 @@ const Navigation = () => {
   const isHome = location.pathname === "/";
   const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
   const isBookTicketsRoute = location.pathname === "/book-tickets";
-  const isTransparentRoute = isHome || isAuthRoute || isBookTicketsRoute;
+  const isLiveStatusRoute = location.pathname === "/live-status";
+  const isTransparentRoute = isHome || isAuthRoute || isBookTicketsRoute || isLiveStatusRoute;
 
   const navItems = [
     { href: "/", label: "Home" },

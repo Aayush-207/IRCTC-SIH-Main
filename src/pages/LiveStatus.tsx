@@ -1,100 +1,164 @@
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Search, Train, Clock, MapPin, AlertTriangle, CheckCircle, Circle } from "lucide-react";
+import { Train, Clock, MapPin, AlertTriangle, CheckCircle, Circle } from "lucide-react";
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
+import { useSearchParams } from "react-router-dom";
+import liveBg from "@/assets/live.jpg";
 
-// Google Maps component
-const MapComponent = () => {
+type ApiStation = {
+  trainname?: string;
+  source?: string;
+  dest?: string;
+  station?: string;
+  code?: string;
+  arr?: string;
+  dep?: string;
+  platform?: string;
+  delay?: string;
+  distance?: string | number;
+  current?: string | boolean;
+  status?: string;
+};
+
+type TimelineStation = {
+  name: string;
+  code: string;
+  arrivalTime: string;
+  departureTime: string;
+  platform: string;
+  status: "current" | "departed" | "upcoming";
+  delay: string;
+  distance: string | number;
+};
+
+type TrainStatusView = {
+  trainName: string;
+  trainNumber: string;
+  date: string;
+  source: string;
+  destination: string;
+  departureTime: string;
+  arrivalTime: string;
+  status: string;
+  delay: string;
+  currentStation: string;
+  currentStationTime: string;
+  nextStation: string;
+  nextStationTime: string;
+  distanceCovered: number;
+  totalDistance: number;
+  avgSpeed: string;
+  stations: TimelineStation[];
+};
+
+const TODAY = new Date().toISOString().slice(0, 10);
+
+const isValidJourneyDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+const MapComponent = ({ stations }: { stations: TimelineStation[] }) => {
   const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (mapRef.current) {
-      const map = new google.maps.Map(mapRef.current, {
-        center: { lat: 20.5937, lng: 78.9629 }, // Center of India
-        zoom: 6,
-        mapTypeId: google.maps.MapTypeId.ROADMAP,
-        styles: [
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [{ visibility: "off" }]
+    if (!mapRef.current || !stations.length) return;
+
+    const map = new google.maps.Map(mapRef.current, {
+      center: { lat: 20.5937, lng: 78.9629 },
+      zoom: 6,
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      styles: [
+        {
+          featureType: "poi",
+          elementType: "labels",
+          stylers: [{ visibility: "off" }],
+        },
+      ],
+    });
+
+    let isCancelled = false;
+    const geocoder = new google.maps.Geocoder();
+
+    const geocodeStation = (stationName: string) =>
+      new Promise<google.maps.LatLngLiteral | null>((resolve) => {
+        geocoder.geocode({ address: `${stationName}, India` }, (results, status) => {
+          if (status === "OK" && results?.[0]?.geometry?.location) {
+            const location = results[0].geometry.location;
+            resolve({ lat: location.lat(), lng: location.lng() });
+            return;
           }
-        ]
+          resolve(null);
+        });
       });
 
-      // Add Mumbai → New Delhi route polyline in blue
-      const routePath = [
-        { lat: 19.0760, lng: 72.8777 }, // Mumbai
-        { lat: 22.3072, lng: 73.1812 }, // Vadodara (approx waypoint)
-        { lat: 25.2138, lng: 75.8648 }, // Kota (approx waypoint)
-        { lat: 27.4924, lng: 77.6737 }, // Mathura (approx waypoint)
-        { lat: 28.6139, lng: 77.2090 }, // New Delhi
-      ];
+    const drawRoute = async () => {
+      const routePath: google.maps.LatLngLiteral[] = [];
 
-      const polyline = new google.maps.Polyline({
-        path: routePath,
-        geodesic: true,
-        strokeColor: "#2563eb", // Tailwind blue-600
-        strokeOpacity: 0.95,
-        strokeWeight: 4,
-      });
-      polyline.setMap(map);
+      for (const station of stations) {
+        const point = await geocodeStation(station.name);
+        if (!point || isCancelled) continue;
+        routePath.push(point);
 
-      // Fit map to the route
+        const markerColor = station.status === "current"
+          ? "#2563eb"
+          : station.status === "departed"
+            ? "#16a34a"
+            : "#6b7280";
+
+        new google.maps.Marker({
+          map,
+          position: point,
+          title: station.name,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 6,
+            fillColor: markerColor,
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 2,
+          },
+        });
+      }
+
+      if (isCancelled || routePath.length === 0) return;
+
+      if (routePath.length > 1) {
+        const polyline = new google.maps.Polyline({
+          path: routePath,
+          geodesic: true,
+          strokeColor: "#2563eb",
+          strokeOpacity: 0.95,
+          strokeWeight: 4,
+        });
+        polyline.setMap(map);
+      }
+
       const bounds = new google.maps.LatLngBounds();
-      routePath.forEach((p) => bounds.extend(p));
+      routePath.forEach((point) => bounds.extend(point));
       map.fitBounds(bounds);
-    }
-  }, []);
+    };
 
-  return <div ref={mapRef} className="w-full h-96 rounded-xl ring-1 ring-border shadow-sm" />;
-};
+    void drawRoute();
 
-const render = (status: Status) => {
-  if (status === Status.LOADING) {
-    return (
-      <div className="w-full h-96 rounded-xl bg-muted flex items-center justify-center ring-1 ring-border">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Loading map...</p>
-        </div>
-      </div>
-    );
-  }
-  if (status === Status.FAILURE) {
-    return (
-      <div className="w-full h-96 rounded-xl bg-muted flex items-center justify-center ring-1 ring-border">
-        <div className="text-center">
-          <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Map unavailable</p>
-        </div>
-      </div>
-    );
-  }
-  return <MapComponent />;
+    return () => {
+      isCancelled = true;
+    };
+  }, [stations]);
+
+  return <div ref={mapRef} className="w-full h-96 rounded-xl ring-1 ring-white/25 shadow-sm" />;
 };
 
 const LiveStatus = () => {
+  const [searchParams] = useSearchParams();
   const [trainQuery, setTrainQuery] = useState("");
-  const [journeyDate, setJourneyDate] = useState<string>(new Date().toISOString().slice(0,10));
-  const [trainStatus, setTrainStatus] = useState<any>(null);
+  const [journeyDate, setJourneyDate] = useState<string>(TODAY);
+  const [trainStatus, setTrainStatus] = useState<TrainStatusView | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
 
-  const handleSearch = async () => {
-    const query = trainQuery.trim();
-    if (!query) return;
-
-    if (!/^[0-9]{5}$/.test(query)) {
-      setError("Enter a valid 5-digit train number");
-      return;
-    }
-
+  const fetchTrainStatus = useCallback(async (query: string, date: string) => {
     setError(null);
     setIsSearching(true);
 
@@ -102,289 +166,334 @@ const LiveStatus = () => {
       const response = await fetch("https://easy-rail.onrender.com/fetch-train-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trainNumber: query, dates: journeyDate })
+        body: JSON.stringify({ trainNumber: query, dates: date }),
       });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || "Failed to fetch train status");
       }
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("No live status found for this train/date");
+      }
 
-      // Backend returns an array of station status objects
-      // Build a summary header and a stations array for the timeline UI
-      const currentIndex = data.findIndex((s: any) => s.current === "true");
-      const first = data[0] || {};
-      const last = data[data.length - 1] || {};
-      const distanceCovered = currentIndex >= 0 ? currentIndex * 10 : 0; // unknown - placeholder
-      const totalDistance = data.length * 10; // placeholder for progress bar scaling
+      const stations = data as ApiStation[];
+      const currentIndex = stations.findIndex((station) => station.current === "true" || station.current === true);
+      const first = stations[0] || {};
+      const last = stations[stations.length - 1] || {};
 
-      const mapped = {
+      const parseDistance = (value: string | number | undefined) => {
+        if (typeof value === "number") return Number.isFinite(value) ? value : null;
+        if (typeof value === "string") {
+          const numeric = Number(value.replace(/[^0-9.]/g, ""));
+          return Number.isFinite(numeric) ? numeric : null;
+        }
+        return null;
+      };
+
+      const lastDistance = parseDistance(last.distance);
+      const currentDistance = currentIndex >= 0 ? parseDistance(stations[currentIndex]?.distance) : 0;
+      const distanceCovered = currentDistance ?? (currentIndex >= 0 ? (currentIndex + 1) * 10 : 0);
+      const totalDistance = lastDistance ?? Math.max(stations.length * 10, distanceCovered);
+
+      const mapped: TrainStatusView = {
         trainName: first.trainname || `Train ${query}`,
         trainNumber: query,
-        date: journeyDate,
+        date,
         source: first.source || "-",
         destination: last.dest || "-",
         departureTime: first.dep || "-",
         arrivalTime: last.arr || "-",
         status: currentIndex >= 0 ? "Running" : "Scheduled",
-        delay: data[currentIndex]?.delay || "On Time",
-        currentStation: data[currentIndex]?.station || first.station || "-",
-        currentStationTime: data[currentIndex]?.arr || data[currentIndex]?.dep || "-",
-        nextStation: data[currentIndex + 1]?.station || "-",
-        nextStationTime: data[currentIndex + 1]?.arr || "-",
+        delay: (currentIndex >= 0 ? stations[currentIndex]?.delay : undefined) || "On Time",
+        currentStation: (currentIndex >= 0 ? stations[currentIndex]?.station : undefined) || first.station || "-",
+        currentStationTime: (currentIndex >= 0 ? (stations[currentIndex]?.arr || stations[currentIndex]?.dep) : undefined) || "-",
+        nextStation: (currentIndex >= 0 ? stations[currentIndex + 1]?.station : undefined) || (currentIndex === -1 ? first.station : "-") || "-",
+        nextStationTime: (currentIndex >= 0 ? stations[currentIndex + 1]?.arr : undefined) || (currentIndex === -1 ? first.arr : "-") || "-",
         distanceCovered,
         totalDistance,
         avgSpeed: "-",
-        stations: data.map((s: any) => ({
-          name: s.station,
-          code: s.code || "",
-          arrivalTime: s.arr || "-",
-          departureTime: s.dep || "-",
-          platform: s.platform || "-",
-          status: s.current === "true" ? "current" : (s.status === "crossed" ? "departed" : "upcoming"),
-          delay: s.delay || "On Time",
-          distance: s.distance || "-",
-        }))
+        stations: stations.map((station, index) => ({
+          name: station.station || "-",
+          code: station.code || "",
+          arrivalTime: station.arr || "-",
+          departureTime: station.dep || "-",
+          platform: station.platform || "-",
+          status: station.current === "true" || station.current === true
+            ? "current"
+            : index < (currentIndex === -1 ? 0 : currentIndex)
+              ? "departed"
+              : "upcoming",
+          delay: station.delay || "On Time",
+          distance: station.distance || "-",
+        })),
       };
 
       setTrainStatus(mapped);
-    } catch (e: any) {
-      setError(e?.message || "Something went wrong");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Something went wrong";
+      setError(message);
       setTrainStatus(null);
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
+
+  const searchParamsKey = searchParams.toString();
+
+  useEffect(() => {
+    const trainFromUrl = searchParams.get("trainNumber")?.trim() || "";
+    const dateFromUrl = searchParams.get("date") || TODAY;
+
+    if (!trainFromUrl) return;
+    if (!/^[0-9]{5}$/.test(trainFromUrl)) {
+      setError("Enter a valid 5-digit train number");
+      return;
+    }
+
+    const normalizedDate = isValidJourneyDate(dateFromUrl) ? dateFromUrl : TODAY;
+    setTrainQuery(trainFromUrl);
+    setJourneyDate(normalizedDate);
+    void fetchTrainStatus(trainFromUrl, normalizedDate);
+  }, [fetchTrainStatus, searchParamsKey, searchParams]);
 
   const getStationIcon = (status: string) => {
     switch (status) {
-      case 'departed':
-        return <CheckCircle className="h-5 w-5 text-success" />;
-      case 'current':
-        return <Train className="h-5 w-5 text-primary animate-pulse" />;
-      case 'upcoming':
-        return <Circle className="h-5 w-5 text-muted-foreground" />;
+      case "departed":
+        return <CheckCircle className="h-5 w-5 text-emerald-300" />;
+      case "current":
+        return <Train className="h-5 w-5 text-sky-300 animate-pulse" />;
+      case "upcoming":
+        return <Circle className="h-5 w-5 text-white/65" />;
       default:
-        return <Circle className="h-5 w-5 text-muted-foreground" />;
+        return <Circle className="h-5 w-5 text-white/65" />;
     }
   };
 
   const getDelayColor = (delay: string) => {
-    if (delay === "On Time") return "text-success";
+    if (delay === "On Time") return "text-emerald-200 border-emerald-200/50";
     if (delay.includes("min")) {
-      const minutes = parseInt(delay);
-      if (minutes <= 15) return "text-railway-orange";
-      return "text-destructive";
+      const minutes = parseInt(delay, 10);
+      if (minutes <= 15) return "text-amber-200 border-amber-200/50";
+      return "text-red-200 border-red-200/50";
     }
-    return "text-muted-foreground";
+    return "text-white/75 border-white/25";
   };
 
-  const progressPercentage = trainStatus 
-    ? (trainStatus.distanceCovered / (trainStatus.totalDistance || 1)) * 100 
+  const progressPercentage = trainStatus
+    ? (trainStatus.distanceCovered / (trainStatus.totalDistance || 1)) * 100
     : 0;
 
+  const renderMap = (status: Status) => {
+    if (status === Status.LOADING) {
+      return (
+        <div className="w-full h-96 rounded-xl bg-white/10 flex items-center justify-center ring-1 ring-white/25">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+            <p className="text-sm text-white/75">Loading map...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (status === Status.FAILURE) {
+      return (
+        <div className="w-full h-96 rounded-xl bg-white/10 flex items-center justify-center ring-1 ring-white/25">
+          <div className="text-center">
+            <MapPin className="h-8 w-8 text-white/75 mx-auto mb-2" />
+            <p className="text-sm text-white/75">Map unavailable</p>
+          </div>
+        </div>
+      );
+    }
+
+    return <MapComponent stations={trainStatus?.stations || []} />;
+  };
+
+  const glassCardClass = "border border-white/20 bg-white/10 backdrop-blur-xl text-white shadow-2xl";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-100 py-12">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <Card className="border-2 card-glow ring-1 ring-primary/20 hover:ring-primary/40">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-railway-orange/10 rounded-t-xl border-b">
-            <CardTitle>
-              <div className="flex items-center justify-center">
-                <div className="flex items-center gap-3">
-                  <span className="hidden sm:block h-px w-12 bg-gradient-to-r from-transparent via-primary to-transparent" />
-                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full border-2 widget-glow ring-1 ring-inset ring-primary/20 bg-white/70 backdrop-blur">
-                    <Clock className="h-7 w-7 text-primary" />
-                    <span className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-900 via-zinc-700 to-primary bg-clip-text text-transparent">Live Train Status</span>
-                  </div>
-                  <span className="hidden sm:block h-px w-12 bg-gradient-to-r from-transparent via-primary to-transparent" />
-                </div>
+    <div className="relative h-screen overflow-hidden">
+      <div
+        className="absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${liveBg})` }}
+      />
+      <div className="absolute inset-0 -z-10 bg-black/60" />
+
+      <div className="relative z-10 h-full overflow-y-auto">
+        <div className="container mx-auto px-4 max-w-6xl pt-24 pb-10">
+        <Card className={`${glassCardClass} mb-6`}>
+          <CardHeader className="pb-2 border-b border-white/15">
+            <CardTitle className="text-center">
+              <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-white/20 bg-white/10 backdrop-blur-md">
+                <Clock className="h-6 w-6 text-white" />
+                <span className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">Live Train Status</span>
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="train">Train Number</Label>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div className="flex-1 flex items-center gap-3 border rounded-lg px-3 py-2 widget-glow">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="train"
-                      placeholder="e.g., 12301"
-                      value={trainQuery}
-                      onChange={(e) => setTrainQuery(e.target.value.replace(/\D/g, '').slice(0,5))}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                      className="border-0 focus-visible:ring-0 px-0"
-                    />
-                  </div>
-                  <div className="flex items-center gap-3 border rounded-lg px-3 py-2 widget-glow">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="date"
-                      value={journeyDate}
-                      onChange={(e) => setJourneyDate(e.target.value)}
-                      className="border-0 focus-visible:ring-0 px-0 w-[10.5rem]"
-                    />
-                  </div>
-                  <Button onClick={handleSearch} disabled={isSearching} className="h-11 bg-gradient-railway hover:opacity-90 shadow-lg">
-                    {isSearching ? "Searching..." : "Track"}
-                  </Button>
-                </div>
-                {error && (
-                  <p className="text-sm text-destructive">{error}</p>
-                )}
+          <CardContent className="pt-4">
+            <div className="grid gap-3 md:grid-cols-2 text-sm md:text-base">
+              <div className="rounded-xl border border-white/15 bg-white/10 px-4 py-3">
+                <span className="font-semibold text-white/80">Train Number - </span>
+                <span className="font-bold text-white">{trainQuery || "-"}</span>
+              </div>
+              <div className="rounded-xl border border-white/15 bg-white/10 px-4 py-3">
+                <span className="font-semibold text-white/80">Date - </span>
+                <span className="font-bold text-white">{journeyDate || "-"}</span>
               </div>
             </div>
 
-            {trainStatus && (
-              <div className="space-y-6">
-                {/* Train Info Header */}
-                <Card className="border-primary/20">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-2">
-                        <Train className="h-5 w-5 text-primary" />
-                        <span className="font-semibold text-lg">{trainStatus.trainName}</span>
-                        <Badge variant="secondary">{trainStatus.trainNumber}</Badge>
-                      </div>
-                      <Badge 
-                        variant="outline"
-                        className={`${trainStatus.status === 'Running' ? 'border-success text-success' : 'border-muted-foreground text-muted-foreground'}`}
-                      >
-                        {trainStatus.status}
-                      </Badge>
+            {isSearching && <p className="mt-3 text-sm text-white/80">Loading live status...</p>}
+            {error && <p className="mt-3 text-sm text-red-200">{error}</p>}
+          </CardContent>
+        </Card>
+
+        {trainStatus && (
+          <div className="space-y-6">
+            <Card className={glassCardClass}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Train className="h-5 w-5 text-white" />
+                    <span className="font-semibold text-lg">{trainStatus.trainName}</span>
+                    <Badge className="bg-white/20 text-white border-white/20 hover:bg-white/20">{trainStatus.trainNumber}</Badge>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={trainStatus.status === "Running" ? "border-emerald-300 text-emerald-200" : "border-white/30 text-white/80"}
+                  >
+                    {trainStatus.status}
+                  </Badge>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-white/75" />
+                    <span className="text-sm">
+                      <span className="font-medium">{trainStatus.source}</span> -&gt; <span className="font-medium">{trainStatus.destination}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-4 w-4 text-white/75" />
+                    <span className="text-sm">{trainStatus.date}</span>
+                  </div>
+                </div>
+
+                {trainStatus.delay !== "On Time" && (
+                  <div className="bg-amber-400/15 border border-amber-300/30 rounded-lg p-3 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-200" />
+                      <span className="text-amber-100 font-medium">Running Late by {trainStatus.delay}</span>
                     </div>
+                  </div>
+                )}
 
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          <span className="font-medium">{trainStatus.source}</span> → <span className="font-medium">{trainStatus.destination}</span>
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{trainStatus.date}</span>
-                      </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Journey Progress</span>
+                    <span>{Math.round(progressPercentage)}%</span>
+                  </div>
+                  <Progress value={progressPercentage} className="h-2" />
+                  <div className="flex justify-between text-xs text-white/75">
+                    <span>{trainStatus.distanceCovered} km</span>
+                    <span>{trainStatus.totalDistance} km</span>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/15">
+                  <div>
+                    <Label className="text-xs text-white/70">CURRENT STATION</Label>
+                    <p className="font-medium">{trainStatus.currentStation}</p>
+                    <p className="text-sm text-white/75">{trainStatus.currentStationTime}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-white/70">NEXT STATION</Label>
+                    <p className="font-medium">{trainStatus.nextStation}</p>
+                    <p className="text-sm text-white/75">{trainStatus.nextStationTime}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-white/70">AVERAGE SPEED</Label>
+                    <p className="font-medium text-white">{trainStatus.avgSpeed}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className={glassCardClass}>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <MapPin className="h-5 w-5 text-white" />
+                  <span>Route Map</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {mapsApiKey ? (
+                  <Wrapper apiKey={mapsApiKey} render={renderMap} />
+                ) : (
+                  <div className="w-full h-96 rounded-xl bg-white/10 flex items-center justify-center ring-1 ring-white/25">
+                    <div className="text-center">
+                      <MapPin className="h-8 w-8 text-white/75 mx-auto mb-2" />
+                      <p className="text-sm text-white/75">Google Maps API key not configured</p>
                     </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-                    {trainStatus.delay !== "On Time" && (
-                      <div className="bg-railway-orange/10 border border-railway-orange/20 rounded-lg p-3 mb-4">
-                        <div className="flex items-center space-x-2">
-                          <AlertTriangle className="h-4 w-4 text-railway-orange" />
-                          <span className="text-railway-orange font-medium">Running Late by {trainStatus.delay}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Progress */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Journey Progress</span>
-                        <span>{Math.round(progressPercentage)}%</span>
-                      </div>
-                      <Progress value={progressPercentage} className="h-2" />
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{trainStatus.distanceCovered} km</span>
-                        <span>{trainStatus.totalDistance} km</span>
-                      </div>
-                    </div>
-
-                    {/* Current Status */}
-                    <div className="grid md:grid-cols-3 gap-4 mt-4 pt-4 border-t">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">CURRENT STATION</Label>
-                        <p className="font-medium">{trainStatus.currentStation}</p>
-                        <p className="text-sm text-muted-foreground">{trainStatus.currentStationTime}</p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">NEXT STATION</Label>
-                        <p className="font-medium">{trainStatus.nextStation}</p>
-                        <p className="text-sm text-muted-foreground">{trainStatus.nextStationTime}</p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">AVERAGE SPEED</Label>
-                        <p className="font-medium text-primary">{trainStatus.avgSpeed}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Google Map */}
-                <Card className="card-glow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <MapPin className="h-5 w-5 text-primary" />
-                      <span>Route Map</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Wrapper apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} render={render} />
-                  </CardContent>
-                </Card>
-
-                {/* Station Timeline */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Station Timeline</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {trainStatus.stations.map((station: any, index: number) => (
-                        <div key={index} className="relative">
-                          {index < trainStatus.stations.length - 1 && (
-                            <div 
-                              className={`absolute left-2.5 top-8 w-0.5 h-12 ${
-                                station.status === 'departed' ? 'bg-success' : 'bg-border'
-                              }`}
-                            />
-                          )}
-                          <div className="flex items-start space-x-4">
-                            {getStationIcon(station.status)}
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <h4 className="font-medium">{station.name}</h4>
-                                  <p className="text-sm text-muted-foreground">
-                                    Platform {station.platform} • {station.code}
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-sm font-mono">
-                                      {station.arrivalTime}
-                                      {station.departureTime && station.departureTime !== station.arrivalTime && ` - ${station.departureTime}`}
-                                    </span>
-                                    <Badge 
-                                      variant="outline" 
-                                      className={`text-xs ${getDelayColor(station.delay)}`}
-                                    >
-                                      {station.delay}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground">{station.distance} km</p>
-                                </div>
+            <Card className={glassCardClass}>
+              <CardHeader>
+                <CardTitle>Station Timeline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {trainStatus.stations.map((station: TimelineStation, index: number) => (
+                    <div key={index} className="relative">
+                      {index < trainStatus.stations.length - 1 && (
+                        <div
+                          className={`absolute left-2.5 top-8 w-0.5 h-12 ${station.status === "departed" ? "bg-emerald-300" : "bg-white/20"}`}
+                        />
+                      )}
+                      <div className="flex items-start space-x-4">
+                        {getStationIcon(station.status)}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium">{station.name}</h4>
+                              <p className="text-sm text-white/75">
+                                Platform {station.platform} - {station.code}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-mono">
+                                  {station.arrivalTime}
+                                  {station.departureTime && station.departureTime !== station.arrivalTime && ` - ${station.departureTime}`}
+                                </span>
+                                <Badge variant="outline" className={`text-xs ${getDelayColor(station.delay)}`}>
+                                  {station.delay}
+                                </Badge>
                               </div>
+                              <p className="text-xs text-white/70">{station.distance} km</p>
                             </div>
                           </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-            {!trainStatus && !isSearching && (
-              <div className="text-center py-8">
-                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Enter train number or name to track live status</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Get real-time updates on train location and delays
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {!trainStatus && !isSearching && !error && (
+          <Card className={glassCardClass}>
+            <CardContent className="py-10 text-center">
+              <Clock className="h-12 w-12 text-white/70 mx-auto mb-4" />
+              <p className="text-white/85">Live status will appear here once train details are available.</p>
+            </CardContent>
+          </Card>
+        )}
+        </div>
       </div>
     </div>
   );

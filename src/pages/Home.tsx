@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Clock3, Search } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import wooxBanner1 from "@/assets/woox-banner-01.jpg";
 import wooxBanner2 from "@/assets/woox-banner-02.jpg";
@@ -48,6 +48,7 @@ const Home = () => {
   const [pantryTrainNumber, setPantryTrainNumber] = useState("");
   const [pantrySeat, setPantrySeat] = useState("");
   const [stationQuery, setStationQuery] = useState("Dadar");
+  const [liveError, setLiveError] = useState<string | null>(null);
   const [activeBanner, setActiveBanner] = useState(0);
   const [previousBanner, setPreviousBanner] = useState<number | null>(null);
   const [animationSeed, setAnimationSeed] = useState(0);
@@ -120,7 +121,8 @@ const Home = () => {
   };
 
   const openFullLiveStatus = () => {
-    if (!liveTrainNumber.trim()) {
+    const query = liveTrainNumber.trim();
+    if (!query) {
       toast({
         title: "Missing Train Number",
         description: "Please enter a 5-digit train number",
@@ -128,11 +130,26 @@ const Home = () => {
       });
       return;
     }
-    navigate("/live-status", { state: { trainNumber: liveTrainNumber, date: liveDate } });
+
+    if (!/^[0-9]{5}$/.test(query)) {
+      setLiveError("Enter a valid 5-digit train number");
+      return;
+    }
+
+    setLiveError(null);
+    navigate(`/live-status?trainNumber=${encodeURIComponent(query)}&date=${encodeURIComponent(liveDate)}`);
   };
 
   const openPantry = () => {
-    navigate("/pantry-cart", { state: { trainNumber: pantryTrainNumber, seat: pantrySeat } });
+    if (!pantryTrainNumber.trim() || !pantrySeat.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both train number and coach/seat",
+        variant: "destructive",
+      });
+      return;
+    }
+    navigate(`/pantry-cart?trainNumber=${encodeURIComponent(pantryTrainNumber.trim())}&seatNumber=${encodeURIComponent(pantrySeat.trim())}`);
   };
 
   const openViewStation = () => {
@@ -279,6 +296,8 @@ const Home = () => {
                         <Search className="h-4 w-4 mr-2" />
                         Track Live Status
                       </Button>
+
+                      {liveError && <p className="live-panel-note live-panel-note-error">{liveError}</p>}
                     </>
                   )}
 
@@ -307,9 +326,20 @@ const Home = () => {
                         </div>
                       </div>
 
+                      <div className="live-panel-info">
+                        <div className="live-panel-info-title"><Clock3 className="h-4 w-4" /> Delivery Information</div>
+                        <ul>
+                          <li>Food will be delivered to your seat</li>
+                          <li>Delivery time: 30-45 minutes</li>
+                          <li>Payment on delivery available</li>
+                          <li>Order tracking via SMS</li>
+                        </ul>
+                      </div>
+
                       <Button type="button" className="live-panel-track-btn" onClick={openPantry}>
-                        Open Pantry Cart
+                        View Menu and Order Food
                       </Button>
+
                     </>
                   )}
 

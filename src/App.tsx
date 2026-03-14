@@ -9,10 +9,10 @@ import Navigation from "./components/Navigation";
 import Home from "./pages/Home";
 import BookTickets from "./pages/BookTickets";
 import TrainSearch from "./pages/TrainSearch";
+import PantryCart from "./pages/PantryCart";
 import PNRStatus from "./pages/PNRStatus";
 import LiveStatus from "./pages/LiveStatus";
 import AtStation from "./pages/AtStation";
-import PantryCart from "./pages/PantryCart";
 import AskDisha from "./pages/AskDisha";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -24,11 +24,11 @@ const queryClient = new QueryClient();
 const ROUTE_ORDER = [
   "/",
   "/book-tickets",
-  "/train-search",
-  "/pnr-status",
-  "/live-status",
-  "/at-station",
   "/pantry-cart",
+  "/train-search",
+  "/live-status",
+  "/pnr-status",
+  "/at-station",
   "/ask-disha",
   "/view-station",
   "/login",
@@ -74,11 +74,11 @@ const AnimatedRoutes = () => {
           <Routes location={location}>
             <Route path="/" element={<Home />} />
             <Route path="/book-tickets" element={<BookTickets />} />
-            <Route path="/train-search" element={<TrainSearch />} />
-            <Route path="/pnr-status" element={<PNRStatus />} />
-            <Route path="/live-status" element={<LiveStatus />} />
-            <Route path="/at-station" element={<AtStation />} />
             <Route path="/pantry-cart" element={<PantryCart />} />
+            <Route path="/train-search" element={<TrainSearch />} />
+            <Route path="/live-status" element={<LiveStatus />} />
+            <Route path="/pnr-status" element={<PNRStatus />} />
+            <Route path="/at-station" element={<AtStation />} />
             <Route path="/ask-disha" element={<AskDisha />} />
             <Route path="/view-station" element={<ViewStation />} />
             <Route path="/login" element={<Auth />} />

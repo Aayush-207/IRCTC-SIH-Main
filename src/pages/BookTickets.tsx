@@ -21,6 +21,7 @@ const COACH_BAY_COUNT = 10;
 const SEATS_PER_BAY = 8;
 const TOTAL_COACH_SEATS = COACH_BAY_COUNT * SEATS_PER_BAY;
 const BACK_BUTTON_CLASS = "bg-white/10 border-white/35 text-white hover:bg-white/20 backdrop-blur-sm";
+const PAYMENT_BUTTON_CLASS = "w-full bg-white/10 border-white/35 text-white hover:bg-white/20 backdrop-blur-sm";
 
 const BookTickets = () => {
   const navigate = useNavigate();
@@ -718,13 +719,13 @@ const BookTickets = () => {
         </div>
 
         <div className="grid md:grid-cols-3 gap-4">
-          <Button className="w-full bg-gradient-primary">
+          <Button variant="outline" className={PAYMENT_BUTTON_CLASS}>
             Pay with UPI
           </Button>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className={PAYMENT_BUTTON_CLASS}>
             Debit/Credit Card
           </Button>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className={PAYMENT_BUTTON_CLASS}>
             Net Banking
           </Button>
         </div>
