@@ -10,7 +10,8 @@ const Navigation = () => {
   const location = useLocation();
   const isHome = location.pathname === "/";
   const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
-  const isTransparentRoute = isHome || isAuthRoute;
+  const isBookTicketsRoute = location.pathname === "/book-tickets";
+  const isTransparentRoute = isHome || isAuthRoute || isBookTicketsRoute;
 
   const navItems = [
     { href: "/", label: "Home" },

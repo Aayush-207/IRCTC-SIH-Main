@@ -2,6 +2,149 @@
   justify-content: center;
   align-items: center;
 }
+
+.book-tickets-page {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.book-tickets-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -3;
+}
+
+.book-tickets-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.45)),
+    linear-gradient(to right, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.2));
+  z-index: -2;
+}
+
+.book-tickets-scroll {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  height: 100svh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.book-tickets-content {
+	position: relative;
+	z-index: 1;
+}
+
+.book-tickets-page .booking-glass-card {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(9px);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.32);
+}
+
+.book-tickets-page .booking-inner-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(7px);
+}
+
+.book-tickets-page .booking-glass-card,
+.book-tickets-page .booking-glass-card h1,
+.book-tickets-page .booking-glass-card h2,
+.book-tickets-page .booking-glass-card h3,
+.book-tickets-page .booking-glass-card h4,
+.book-tickets-page .booking-glass-card p,
+.book-tickets-page .booking-glass-card span,
+.book-tickets-page .booking-glass-card label,
+.book-tickets-page .booking-glass-card div,
+.book-tickets-page .booking-inner-glass,
+.book-tickets-page .booking-inner-glass h1,
+.book-tickets-page .booking-inner-glass h2,
+.book-tickets-page .booking-inner-glass h3,
+.book-tickets-page .booking-inner-glass h4,
+.book-tickets-page .booking-inner-glass p,
+.book-tickets-page .booking-inner-glass span,
+.book-tickets-page .booking-inner-glass label,
+.book-tickets-page .booking-inner-glass div {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.book-tickets-page .text-muted-foreground {
+  color: rgba(240, 244, 255, 0.78) !important;
+}
+
+.book-tickets-page .booking-glass-card input,
+.book-tickets-page .booking-glass-card [role="combobox"],
+.book-tickets-page .booking-glass-card button[role="combobox"] {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.book-tickets-page .booking-glass-card input::placeholder {
+  color: rgba(235, 242, 255, 0.7);
+}
+
+.book-tickets-page .booking-glass-card .border,
+.book-tickets-page .booking-glass-card .border-2,
+.book-tickets-page .booking-inner-glass .border,
+.book-tickets-page .booking-inner-glass .border-2 {
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+.book-tickets-page .booking-glass-card .bg-border {
+  background-color: rgba(255, 255, 255, 0.28);
+}
+
+.book-tickets-page .booking-glass-card .text-zinc-900 {
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.book-tickets-page .booking-glass-card .text-primary {
+  color: #66d9ff;
+}
+
+.coach-orientation-wrap {
+  width: 100%;
+  min-height: 300px;
+  height: clamp(300px, 40vw, 420px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.coach-shell-vertical {
+  width: max-content;
+  transform-origin: center center;
+  transform: rotate(90deg) scale(0.9);
+}
+
+@media (max-width: 1200px) {
+  .coach-shell-vertical {
+    transform: rotate(90deg) scale(0.78);
+  }
+}
+
+@media (max-width: 768px) {
+  .coach-orientation-wrap {
+    min-height: 260px;
+    height: clamp(260px, 58vw, 340px);
+  }
+
+  .coach-shell-vertical {
+    transform: rotate(90deg) scale(0.62);
+  }
+}
+
 .seat {
   position: relative;
   width: 2.25rem; /* 36px */

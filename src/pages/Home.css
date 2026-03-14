@@ -100,8 +100,9 @@
 }
 
 .woox-more-info {
-	background: rgba(255, 255, 255, 0.78);
+	background: transparent;
 	backdrop-filter: blur(6px);
+	border: 1px solid rgba(255, 255, 255, 0.38);
 	border-radius: 999px;
 	padding: 1rem 1.9rem;
 	box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
@@ -124,9 +125,10 @@
 .woox-field-label {
 	display: block;
 	font-size: 0.85rem;
-	color: #2a2a2a;
+	color: rgba(255, 255, 255, 0.95);
 	font-weight: 700;
 	margin-bottom: 0.4rem;
+	text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
 }
 
 .woox-field-wrap {
@@ -160,19 +162,21 @@
 }
 
 .woox-date-input {
-	border: 1px solid #d9d9d9;
+	border: 1px solid rgba(255, 255, 255, 0.65);
+	background: rgba(0, 0, 0, 0.2);
 	border-radius: 999px;
 	padding: 0.45rem 0.7rem;
 	font-size: 0.82rem;
-	color: #5b5b5b;
+	color: #ffffff;
 	max-width: 9.5rem;
 }
 
 .woox-date-text {
-	color: #5b5b5b;
+	color: rgba(255, 255, 255, 0.9);
 	margin-top: 0.32rem;
 	font-size: 0.82rem;
 	line-height: 1.1;
+	text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
 }
 
 .woox-search-wrap {

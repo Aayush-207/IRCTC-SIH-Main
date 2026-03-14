@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeftRight, Calendar, Clock, Train, Users, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import StationSelect from "@/components/StationSelect";
+import bookingBg from "@/assets/Booking.jpg";
 
 type BookingStep = 'search' | 'trains' | 'seats' | 'passenger' | 'payment';
 
@@ -179,14 +180,14 @@ const BookTickets = () => {
   };
 
   const renderSearchForm = () => (
-    <Card className="max-w-4xl mx-auto">
+    <Card className="booking-glass-card w-full max-w-[1300px] mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Train className="h-5 w-5 text-primary" />
           <span>Book Train Tickets</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 px-6 md:px-10 pb-8">
         <div className="grid md:grid-cols-2 gap-4">
           <StationSelect
             label="From Station"
@@ -248,17 +249,17 @@ const BookTickets = () => {
 
       <div className="space-y-6">
         {loadingTrains && (
-          <Card className="shadow-card">
+          <Card className="booking-glass-card shadow-card">
             <CardContent className="p-6">Loading trains...</CardContent>
           </Card>
         )}
         {!loadingTrains && trains.length === 0 && !error && (
-          <Card className="shadow-card">
+          <Card className="booking-glass-card shadow-card">
             <CardContent className="p-6">No trains found.</CardContent>
           </Card>
         )}
         {trains.map((train) => (
-          <Card key={train.id} className="shadow-card border-2 hover:shadow-railway hover:border-primary/50 transition-all duration-300 transform hover:-translate-y-1 bg-white/80 backdrop-blur-sm">
+          <Card key={train.id} className="booking-glass-card shadow-card border-2 hover:shadow-railway hover:border-primary/50 transition-all duration-300 transform hover:-translate-y-1">
             <CardContent className="p-8">
               <div className="space-y-6">
                 <div className="grid md:grid-cols-3 gap-6 items-start">
@@ -285,7 +286,7 @@ const BookTickets = () => {
                   {train.classes.map((cls: any) => (
                     <button
                       key={cls.code}
-                      className={`w-full border-2 rounded-xl p-4 text-left transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:ring-2 hover:ring-primary/30 bg-white/70 backdrop-blur-sm ${
+                      className={`booking-inner-glass w-full border-2 rounded-xl p-4 text-left transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:ring-2 hover:ring-primary/30 ${
                         (cls.availability || '').toLowerCase().includes('wl') || (cls.availability || '').toLowerCase().includes('not')
                                                      ? 'border-railway-orange hover:bg-railway-orange/10 hover:border-railway-orange hover:ring-railway-orange/30'
                            : 'border-success hover:bg-success/10 hover:border-success hover:ring-success/30'
@@ -310,7 +311,8 @@ const BookTickets = () => {
   );
 
   const renderSeatSelection = () => (
-    <Card className="max-w-4xl mx-auto">
+    <>
+    <Card className="booking-glass-card w-full max-w-[1400px] mx-auto">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Select Seats - {formData.selectedTrain?.name}{selectedContext.classCode ? ` • ${selectedContext.classCode}` : ''}</CardTitle>
@@ -319,133 +321,137 @@ const BookTickets = () => {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid md:grid-cols-2 gap-6 items-start">
-          {/* Coach left */}
-          <div className="p-4 bg-muted/30 rounded-lg border border-slate-400 md:max-w-none max-w-[330px] md:mx-0 mx-auto">
-            <div className="flex items-center justify-between mb-3 text-[10px] text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="border rounded px-2 py-1 bg-white">TOILET</div>
-                <span>COACH ENTRY/EXIT</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>COACH ENTRY/EXIT</span>
-                <div className="border rounded px-2 py-1 bg-white">TOILET</div>
-              </div>
-            </div>
-            <div className="coach-layout flex flex-col gap-0 mx-auto max-w-[320px] border border-slate-500 rounded-md p-2 overflow-hidden">
-              {Array.from({ length: 9 }, (_, bayIndex) => {
-                const base = bayIndex * 8;
-                const rightSide = [
-                  { n: base + 7, t: 'SL' },
-                  { n: base + 8, t: 'SU' },
-                ];
-                const isBooked = (seatId: string) => bookedSeats?.has(seatId) ?? false;
-                const renderSeat = (seat: { n: number; t: string }, options?: { rotate?: boolean }) => {
-                  const seatId = `S${seat.n}`;
-                  const selected = formData.selectedSeats.includes(seatId);
-                  return (
-                    <Button
-                      key={seatId}
-                      variant="ghost"
-                      size="sm"
-                      className={`seat-btn h-12 w-12 p-0 bg-transparent border-0 shadow-none`}
-                      disabled={isBooked(seatId)}
-                      onClick={() => {
-                        if (selected) {
-                          setFormData({
-                            ...formData,
-                            selectedSeats: formData.selectedSeats.filter((s) => s !== seatId),
-                          });
-                        } else {
-                          setFormData({
-                            ...formData,
-                            selectedSeats: [...formData.selectedSeats, seatId],
-                          });
-                        }
-                      }}
-                    >
-                      <div className={`seat ${options?.rotate ? 'seat--rotated' : ''} ${selected ? 'seat--selected' : ''} ${isBooked(seatId) ? 'seat--booked' : ''}`}>
-                        <span className={`seat-number ${selected ? 'seat-number--on-dark' : ''}`}>{seat.n}</span>
-                      </div>
-                    </Button>
-                  );
-                };
-                return (
-                  <div key={bayIndex} className="grid grid-cols-[1fr_auto_auto] gap-3 items-stretch">
-                    <div className="grid grid-rows-2 gap-8">
-                      <div className="grid grid-cols-3 gap-0 items-center justify-center">
-                        {renderSeat({ n: base + 1, t: 'LB' }, { rotate: true })}
-                        {renderSeat({ n: base + 2, t: 'MB' }, { rotate: true })}
-                        {renderSeat({ n: base + 3, t: 'UB' }, { rotate: true })}
-                      </div>
-                      <div className="grid grid-cols-3 gap-0 items-center justify-center">
-                        {renderSeat({ n: base + 4, t: 'LB' })}
-                        {renderSeat({ n: base + 5, t: 'MB' })}
-                        {renderSeat({ n: base + 6, t: 'UB' })}
-                      </div>
-                    </div>
-                    <div className="bg-border w-12 md:w-16 rounded-none my-0 self-stretch" aria-label="Corridor" />
-                    <div className="grid grid-rows-2 gap-8">
-                      {renderSeat(rightSide[0], { rotate: true })}
-                      {renderSeat(rightSide[1])}
-                    </div>
+      <CardContent className="px-6 md:px-10 pb-8">
+          <div className="booking-inner-glass p-7 md:p-10 rounded-xl border border-white/35">
+            <div className="coach-orientation-wrap -mt-3">
+              <div className="coach-shell-vertical">
+                <div className="flex items-center justify-between mb-3 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <div className="border rounded px-2 py-1 bg-white/20">TOILET</div>
+                    <span>COACH ENTRY/EXIT</span>
                   </div>
-                );
-              })}
-            </div>
-            <div className="flex items-center justify-between mt-3 text-[10px] text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="border rounded px-2 py-1 bg-white">TOILET</div>
-                <span>COACH ENTRY/EXIT</span>
+                  <div className="flex items-center gap-2">
+                    <span>COACH ENTRY/EXIT</span>
+                    <div className="border rounded px-2 py-1 bg-white/20">TOILET</div>
+                  </div>
+                </div>
+                <div className="coach-layout flex flex-col gap-0 mx-auto max-w-[320px] border border-slate-500 rounded-md p-2 overflow-hidden">
+                  {Array.from({ length: 9 }, (_, bayIndex) => {
+                    const base = bayIndex * 8;
+                    const rightSide = [
+                      { n: base + 7, t: 'SL' },
+                      { n: base + 8, t: 'SU' },
+                    ];
+                    const isBooked = (seatId: string) => bookedSeats?.has(seatId) ?? false;
+                    const renderSeat = (seat: { n: number; t: string }, options?: { rotate?: boolean }) => {
+                      const seatId = `S${seat.n}`;
+                      const selected = formData.selectedSeats.includes(seatId);
+                      return (
+                        <Button
+                          key={seatId}
+                          variant="ghost"
+                          size="sm"
+                          className={`seat-btn h-12 w-12 p-0 bg-transparent border-0 shadow-none`}
+                          disabled={isBooked(seatId)}
+                          onClick={() => {
+                            if (selected) {
+                              setFormData({
+                                ...formData,
+                                selectedSeats: formData.selectedSeats.filter((s) => s !== seatId),
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                selectedSeats: [...formData.selectedSeats, seatId],
+                              });
+                            }
+                          }}
+                        >
+                          <div className={`seat ${options?.rotate ? 'seat--rotated' : ''} ${selected ? 'seat--selected' : ''} ${isBooked(seatId) ? 'seat--booked' : ''}`}>
+                            <span className={`seat-number ${selected ? 'seat-number--on-dark' : ''}`}>{seat.n}</span>
+                          </div>
+                        </Button>
+                      );
+                    };
+                    return (
+                      <div key={bayIndex} className="grid grid-cols-[1fr_auto_auto] gap-3 items-stretch">
+                        <div className="grid grid-rows-2 gap-8">
+                          <div className="grid grid-cols-3 gap-0 items-center justify-center">
+                            {renderSeat({ n: base + 1, t: 'LB' }, { rotate: true })}
+                            {renderSeat({ n: base + 2, t: 'MB' }, { rotate: true })}
+                            {renderSeat({ n: base + 3, t: 'UB' }, { rotate: true })}
+                          </div>
+                          <div className="grid grid-cols-3 gap-0 items-center justify-center">
+                            {renderSeat({ n: base + 4, t: 'LB' })}
+                            {renderSeat({ n: base + 5, t: 'MB' })}
+                            {renderSeat({ n: base + 6, t: 'UB' })}
+                          </div>
+                        </div>
+                        <div className="bg-border w-12 md:w-16 rounded-none my-0 self-stretch" aria-label="Corridor" />
+                        <div className="grid grid-rows-2 gap-8">
+                          {renderSeat(rightSide[0], { rotate: true })}
+                          {renderSeat(rightSide[1])}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center justify-between mt-3 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <div className="border rounded px-2 py-1 bg-white/20">TOILET</div>
+                    <span>COACH ENTRY/EXIT</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span>COACH ENTRY/EXIT</span>
+                    <div className="border rounded px-2 py-1 bg-white/20">TOILET</div>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span>COACH ENTRY/EXIT</span>
-                <div className="border rounded px-2 py-1 bg-white">TOILET</div>
+            </div>
+          </div>
+      </CardContent>
+    </Card>
+
+    <Card className="booking-glass-card w-full max-w-[1400px] mx-auto mt-6">
+      <CardContent className="space-y-6 p-6 md:p-8">
+          <div className="booking-inner-glass space-y-4 p-5 md:p-6 border border-white/35 rounded-lg">
+            <div className="font-semibold">Details</div>
+            <div className="flex flex-col gap-3 text-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-primary rounded"></div>
+                  <span>Selected</span>
+                </div>
+                <span className="text-muted-foreground">{formData.selectedSeats.length > 0 ? formData.selectedSeats.join(', ') : '-'}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-slate-500 rounded"></div>
+                <span>Available</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-slate-400 rounded"></div>
+                <span>Booked</span>
+              </div>
+              <div className="pt-2 border-t">
+                <p className="font-semibold">Selected: {formData.selectedSeats.length} seat(s)</p>
               </div>
             </div>
           </div>
 
-          {/* Right panel: legend and actions */}
-          <div className="space-y-6">
-            <div className="space-y-4 p-4 border rounded-lg bg-background">
-              <div className="font-semibold">Details</div>
-              <div className="flex flex-col gap-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-primary rounded"></div>
-                    <span>Selected</span>
-                  </div>
-                  <span className="text-muted-foreground">{formData.selectedSeats.length > 0 ? formData.selectedSeats.join(', ') : '-'}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-slate-500 rounded"></div>
-                  <span>Available</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-slate-400 rounded"></div>
-                  <span>Booked</span>
-                </div>
-                <div className="pt-2 border-t">
-                  <p className="font-semibold">Selected: {formData.selectedSeats.length} seat(s)</p>
-                </div>
-              </div>
-            </div>
-            <Button 
-              onClick={() => setStep('passenger')} 
-              className="w-full"
-              disabled={formData.selectedSeats.length === 0}
-            >
-              Continue to Passenger Details
-            </Button>
-          </div>
-        </div>
+          <Button
+            onClick={() => setStep('passenger')}
+            className="w-full"
+            disabled={formData.selectedSeats.length === 0}
+          >
+            Continue to Passenger Details
+          </Button>
       </CardContent>
     </Card>
+    </>
   );
 
   const renderPassengerDetails = () => (
-    <Card className="max-w-4xl mx-auto">
+    <Card className="booking-glass-card max-w-4xl mx-auto">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
@@ -459,7 +465,7 @@ const BookTickets = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {formData.passengers.map((passenger, index) => (
-          <div key={index} className="p-4 border rounded-lg space-y-4">
+          <div key={index} className="booking-inner-glass p-4 border border-white/35 rounded-lg space-y-4">
             <h4 className="font-semibold">Passenger {index + 1}</h4>
             <div className="grid md:grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -519,7 +525,7 @@ const BookTickets = () => {
   );
 
   const renderPayment = () => (
-    <Card className="max-w-4xl mx-auto">
+    <Card className="booking-glass-card max-w-4xl mx-auto">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
@@ -532,7 +538,7 @@ const BookTickets = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="p-4 bg-muted/30 rounded-lg">
+        <div className="booking-inner-glass p-4 rounded-lg border border-white/35">
           <h4 className="font-semibold mb-4">Booking Summary</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -578,13 +584,21 @@ const BookTickets = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-100 py-8">
-      <div className="container mx-auto px-4">
-        {step === 'search' && renderSearchForm()}
-        {step === 'trains' && renderTrainList()}
-        {step === 'seats' && renderSeatSelection()}
-        {step === 'passenger' && renderPassengerDetails()}
-        {step === 'payment' && renderPayment()}
+    <div className="book-tickets-page min-h-screen">
+      <div
+        className="book-tickets-bg"
+        style={{ backgroundImage: `url(${bookingBg})` }}
+        aria-hidden="true"
+      />
+      <div className="book-tickets-overlay" aria-hidden="true" />
+      <div className="book-tickets-scroll">
+        <div className="book-tickets-content container mx-auto px-4 pt-24 pb-8">
+          {step === 'search' && renderSearchForm()}
+          {step === 'trains' && renderTrainList()}
+          {step === 'seats' && renderSeatSelection()}
+          {step === 'passenger' && renderPassengerDetails()}
+          {step === 'payment' && renderPayment()}
+        </div>
       </div>
     </div>
   );
