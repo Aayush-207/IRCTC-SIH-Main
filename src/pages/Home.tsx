@@ -2,17 +2,24 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import wooxBanner1 from "@/assets/woox-banner-01.jpg";
 import wooxBanner2 from "@/assets/woox-banner-02.jpg";
 import wooxBanner3 from "@/assets/woox-banner-03.jpg";
 import wooxBanner4 from "@/assets/woox-banner-04.jpg";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import StationSelect from "@/components/StationSelect";
 import "./Home.css";
 
 const SLIDE_DURATION_MS = 4300;
 const SLIDE_TRANSITION_MS = 750;
+const PANEL_ORDER: Record<string, number> = {
+  "": 0,
+  live: 1,
+  pantry: 2,
+  "view-station": 3,
+};
 
 const Home = () => {
   const navigate = useNavigate();
@@ -48,7 +55,16 @@ const Home = () => {
   const banners = [wooxBanner1, wooxBanner2, wooxBanner3, wooxBanner4];
   const panelParam = params.get("panel");
   const activePanel = panelParam === "live" || panelParam === "pantry" || panelParam === "view-station" ? panelParam : null;
+  const previousPanelRef = useRef<string | null>(null);
+  const previousPanel = previousPanelRef.current;
+  const previousPanelOrder = PANEL_ORDER[previousPanel ?? ""] ?? 0;
+  const currentPanelOrder = PANEL_ORDER[activePanel ?? ""] ?? 0;
+  const panelDirection = currentPanelOrder >= previousPanelOrder ? 1 : -1;
   const isOverlayOpen = activePanel !== null;
+
+  useEffect(() => {
+    previousPanelRef.current = activePanel;
+  }, [activePanel]);
 
   const changeBanner = useCallback((nextIndex: number) => {
     if (nextIndex === activeBanner) return;
@@ -216,100 +232,112 @@ const Home = () => {
           ))}
         </nav>
 
-        <div className={`live-panel-wrap ${isOverlayOpen ? "open" : ""}`}>
-          <div className="live-panel-shell">
-            <h3 className="live-panel-title">
-              {activePanel === "live" && "Live Train Status"}
-              {activePanel === "pantry" && "Pantry Cart"}
-              {activePanel === "view-station" && "View Station"}
-            </h3>
+        <AnimatePresence mode="wait" initial={false} custom={panelDirection}>
+          {activePanel && (
+            <motion.div
+              key={activePanel}
+              custom={panelDirection}
+              className="live-panel-wrap"
+              initial={{ opacity: 0, x: panelDirection > 0 ? 130 : -130 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: panelDirection > 0 ? -130 : 130 }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="live-panel-shell">
+                <h3 className="live-panel-title">
+                  {activePanel === "live" && "Live Train Status"}
+                  {activePanel === "pantry" && "Pantry Cart"}
+                  {activePanel === "view-station" && "View Station"}
+                </h3>
 
-            <div className="live-panel-box">
-              {activePanel === "live" && (
-                <>
-                  <div className="live-panel-fields">
-                    <div className="live-panel-field">
-                      <span>Train Number</span>
-                      <Input
-                        type="text"
-                        value={liveTrainNumber}
-                        onChange={(e) => setLiveTrainNumber(e.target.value.replace(/\D/g, "").slice(0, 5))}
-                        placeholder="e.g. 12301"
-                        className="live-panel-input"
-                      />
-                    </div>
-                    <div className="live-panel-field">
-                      <span>Journey Date</span>
-                      <Input
-                        type="date"
-                        value={liveDate}
-                        onChange={(e) => setLiveDate(e.target.value)}
-                        className="live-panel-input"
-                      />
-                    </div>
-                  </div>
+                <div className="live-panel-box">
+                  {activePanel === "live" && (
+                    <>
+                      <div className="live-panel-fields">
+                        <div className="live-panel-field">
+                          <span>Train Number</span>
+                          <Input
+                            type="text"
+                            value={liveTrainNumber}
+                            onChange={(e) => setLiveTrainNumber(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                            placeholder="e.g. 12301"
+                            className="live-panel-input"
+                          />
+                        </div>
+                        <div className="live-panel-field">
+                          <span>Journey Date</span>
+                          <Input
+                            type="date"
+                            value={liveDate}
+                            onChange={(e) => setLiveDate(e.target.value)}
+                            className="live-panel-input"
+                          />
+                        </div>
+                      </div>
 
-                  <Button type="button" className="live-panel-track-btn" onClick={openFullLiveStatus}>
-                    <Search className="h-4 w-4 mr-2" />
-                    Track Live Status
-                  </Button>
-                </>
-              )}
+                      <Button type="button" className="live-panel-track-btn" onClick={openFullLiveStatus}>
+                        <Search className="h-4 w-4 mr-2" />
+                        Track Live Status
+                      </Button>
+                    </>
+                  )}
 
-              {activePanel === "pantry" && (
-                <>
-                  <div className="live-panel-fields">
-                    <div className="live-panel-field">
-                      <span>Train Number</span>
-                      <Input
-                        type="text"
-                        value={pantryTrainNumber}
-                        onChange={(e) => setPantryTrainNumber(e.target.value.replace(/\D/g, "").slice(0, 5))}
-                        placeholder="e.g. 12951"
-                        className="live-panel-input"
-                      />
-                    </div>
-                    <div className="live-panel-field">
-                      <span>Coach / Seat</span>
-                      <Input
-                        type="text"
-                        value={pantrySeat}
-                        onChange={(e) => setPantrySeat(e.target.value)}
-                        placeholder="e.g. B2 / 36"
-                        className="live-panel-input"
-                      />
-                    </div>
-                  </div>
+                  {activePanel === "pantry" && (
+                    <>
+                      <div className="live-panel-fields">
+                        <div className="live-panel-field">
+                          <span>Train Number</span>
+                          <Input
+                            type="text"
+                            value={pantryTrainNumber}
+                            onChange={(e) => setPantryTrainNumber(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                            placeholder="e.g. 12951"
+                            className="live-panel-input"
+                          />
+                        </div>
+                        <div className="live-panel-field">
+                          <span>Coach / Seat</span>
+                          <Input
+                            type="text"
+                            value={pantrySeat}
+                            onChange={(e) => setPantrySeat(e.target.value)}
+                            placeholder="e.g. B2 / 36"
+                            className="live-panel-input"
+                          />
+                        </div>
+                      </div>
 
-                  <Button type="button" className="live-panel-track-btn" onClick={openPantry}>
-                    Open Pantry Cart
-                  </Button>
-                </>
-              )}
+                      <Button type="button" className="live-panel-track-btn" onClick={openPantry}>
+                        Open Pantry Cart
+                      </Button>
+                    </>
+                  )}
 
-              {activePanel === "view-station" && (
-                <>
-                  <div className="live-panel-fields one-col">
-                    <div className="live-panel-field">
-                      <span>Station Name</span>
-                      <Input
-                        type="text"
-                        value={stationQuery}
-                        onChange={(e) => setStationQuery(e.target.value)}
-                        placeholder="e.g. Dadar"
-                        className="live-panel-input"
-                      />
-                    </div>
-                  </div>
+                  {activePanel === "view-station" && (
+                    <>
+                      <div className="live-panel-fields one-col">
+                        <div className="live-panel-field">
+                          <span>Station Name</span>
+                          <Input
+                            type="text"
+                            value={stationQuery}
+                            onChange={(e) => setStationQuery(e.target.value)}
+                            placeholder="e.g. Dadar"
+                            className="live-panel-input"
+                          />
+                        </div>
+                      </div>
 
-                  <Button type="button" className="live-panel-track-btn" onClick={openViewStation}>
-                    Open View Station
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+                      <Button type="button" className="live-panel-track-btn" onClick={openViewStation}>
+                        Open View Station
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
     </div>
   );
