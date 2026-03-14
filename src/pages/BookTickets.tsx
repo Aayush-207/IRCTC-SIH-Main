@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import "./BookTickets.css";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,13 @@ type SelectedContext = {
   classCode?: string;
 };
 
+const COACH_BAY_COUNT = 10;
+const SEATS_PER_BAY = 8;
+const TOTAL_COACH_SEATS = COACH_BAY_COUNT * SEATS_PER_BAY;
+const BACK_BUTTON_CLASS = "bg-white/10 border-white/35 text-white hover:bg-white/20 backdrop-blur-sm";
+
 const BookTickets = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState<BookingStep>('search');
   const [formData, setFormData] = useState({
     from: '',
@@ -70,7 +77,7 @@ const BookTickets = () => {
     // Initialize booked seats when entering seats view or when dependencies change
     if (step === 'seats') {
       if (!bookedSeats) {
-        initializeBookedSeats(72); // SL-like layout uses 72 seats
+        initializeBookedSeats(TOTAL_COACH_SEATS);
       }
     } else if (bookedSeats) {
       // Reset when leaving seats to avoid leaking previous state for a new selection
@@ -96,6 +103,75 @@ const BookTickets = () => {
 
   const isStationCode = (s: string) => /^[A-Z]{2,4}$/.test(s.trim().toUpperCase());
 
+  const hasAvailabilityFields = (value: any) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+    return Boolean(
+      value.fare !== undefined ||
+      value.availabilityDisplayName !== undefined ||
+      value.availability !== undefined ||
+      value.prediction !== undefined ||
+      value.chance !== undefined ||
+      value.probability !== undefined
+    );
+  };
+
+  const pickAvailabilityPayload = (value: any, journeyDateKey: string, depth = 0): any => {
+    if (!value || depth > 4) return null;
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const found = pickAvailabilityPayload(item, journeyDateKey, depth + 1);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    if (typeof value !== "object") return null;
+
+    if (hasAvailabilityFields(value)) return value;
+
+    if (journeyDateKey && value[journeyDateKey]) {
+      const byDate = pickAvailabilityPayload(value[journeyDateKey], journeyDateKey, depth + 1);
+      if (byDate) return byDate;
+    }
+
+    for (const nested of Object.values(value)) {
+      const found = pickAvailabilityPayload(nested, journeyDateKey, depth + 1);
+      if (found) return found;
+    }
+
+    return null;
+  };
+
+  const getClassAvailabilityData = (train: any, classType: string, journeyDateKey: string) => {
+    const isTatkal = classType.endsWith("_TQ");
+    const classKey = classType.replace(/_TQ$/, "");
+
+    const primaryRoot = isTatkal ? train.availabilityCacheTatkal : train.availabilityCache;
+    const secondaryRoot = isTatkal ? train.availabilityCache : train.availabilityCacheTatkal;
+
+    const candidates = [
+      primaryRoot?.[classType],
+      primaryRoot?.[classKey],
+      secondaryRoot?.[classType],
+      secondaryRoot?.[classKey],
+    ];
+
+    for (const candidate of candidates) {
+      const parsed = pickAvailabilityPayload(candidate, journeyDateKey);
+      if (parsed) return parsed;
+    }
+
+    return null;
+  };
+
+  const getFareText = (rawFare: any) => {
+    if (rawFare === null || rawFare === undefined || rawFare === "") return "N/A";
+    const numeric = Number(String(rawFare).replace(/,/g, ""));
+    if (Number.isFinite(numeric) && numeric > 0) return `₹${numeric}`;
+    return String(rawFare);
+  };
+
   const fetchTrains = async (fromCode: string, toCode: string, dateISO: string) => {
     setLoadingTrains(true);
     setError(null);
@@ -114,16 +190,19 @@ const BookTickets = () => {
       const list = json?.data?.trainList || [];
 
       const mapped = list.map((t: any) => {
-        const allClasses = t.avlClassesSorted || Object.keys(t.availabilityCache || {});
+        const cacheClasses = Object.keys(t.availabilityCache || {});
+        const tatkalClasses = Object.keys(t.availabilityCacheTatkal || {}).map((k) => `${k}_TQ`);
+        const allClasses = Array.from(new Set([...(t.avlClassesSorted || []), ...cacheClasses, ...tatkalClasses]));
+
         const classes = allClasses.map((classType: string) => {
-          const classKey = classType.replace("_TQ", "");
-          const isTatkal = classType.includes("_TQ");
-          const data = isTatkal ? (t.availabilityCacheTatkal?.[classKey] || {}) : (t.availabilityCache?.[classKey] || {});
+          const data = getClassAvailabilityData(t, classType, indianFormatDate) || {};
+          const prediction = data.prediction ?? data.chance ?? data.probability ?? data.confirmationChance ?? "N/A";
+
           return {
             code: classType,
-            fare: data.fare || '-',
-            availability: data.availabilityDisplayName || 'Check',
-            prediction: data.prediction || '--%'
+            fareText: getFareText(data.fare ?? data.ticketFare ?? data.totalFare ?? data.price),
+            availability: data.availabilityDisplayName ?? data.availability ?? data.status ?? "N/A",
+            prediction: String(prediction),
           };
         });
         return {
@@ -235,8 +314,8 @@ const BookTickets = () => {
   const renderTrainList = () => (
     <div className="max-w-6xl mx-auto space-y-6 px-4">
       <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={() => setStep('search')}>
-          ← Back to Search
+        <Button variant="outline" className={BACK_BUTTON_CLASS} onClick={() => navigate('/')}>
+          ← Back to Home
         </Button>
         <p className="text-muted-foreground">
           {formData.from} → {formData.to} • {formData.date}
@@ -295,7 +374,7 @@ const BookTickets = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="font-bold text-lg">{cls.code}</div>
-                        <div className="text-lg font-semibold text-primary">₹{cls.fare}</div>
+                        <div className="text-lg font-semibold text-primary">{cls.fareText}</div>
                       </div>
                       <div className="text-sm mt-2 font-medium">{cls.availability}</div>
                       <div className="text-xs text-muted-foreground mt-1">Chance: {cls.prediction}</div>
@@ -316,13 +395,17 @@ const BookTickets = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Select Seats - {formData.selectedTrain?.name}{selectedContext.classCode ? ` • ${selectedContext.classCode}` : ''}</CardTitle>
-          <Button variant="outline" onClick={() => setStep('trains')}>
+          <Button
+            variant="outline"
+            onClick={() => setStep('trains')}
+            className={BACK_BUTTON_CLASS}
+          >
             ← Back
           </Button>
         </div>
       </CardHeader>
       <CardContent className="px-6 md:px-10 pb-8">
-          <div className="booking-inner-glass p-7 md:p-10 rounded-xl border border-white/35">
+          <div className="booking-inner-glass p-1 md:p-2 rounded-xl border border-white/35">
             <div className="coach-orientation-wrap -mt-3">
               <div className="coach-shell-vertical">
                 <div className="flex items-center justify-between mb-3 text-[10px] text-muted-foreground">
@@ -336,7 +419,7 @@ const BookTickets = () => {
                   </div>
                 </div>
                 <div className="coach-layout flex flex-col gap-0 mx-auto max-w-[320px] border border-slate-500 rounded-md p-2 overflow-hidden">
-                  {Array.from({ length: 9 }, (_, bayIndex) => {
+                  {Array.from({ length: COACH_BAY_COUNT }, (_, bayIndex) => {
                     const base = bayIndex * 8;
                     const rightSide = [
                       { n: base + 7, t: 'SL' },
@@ -414,36 +497,102 @@ const BookTickets = () => {
 
     <Card className="booking-glass-card w-full max-w-[1400px] mx-auto mt-6">
       <CardContent className="space-y-6 p-6 md:p-8">
-          <div className="booking-inner-glass space-y-4 p-5 md:p-6 border border-white/35 rounded-lg">
-            <div className="font-semibold">Details</div>
-            <div className="flex flex-col gap-3 text-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-primary rounded"></div>
-                  <span>Selected</span>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="booking-inner-glass space-y-4 p-5 md:p-6 border border-white/35 rounded-lg">
+              <div className="font-semibold">Details</div>
+              <div className="flex flex-col gap-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-primary rounded"></div>
+                    <span>Selected</span>
+                  </div>
+                  <span className="text-muted-foreground">{formData.selectedSeats.length > 0 ? formData.selectedSeats.join(', ') : '-'}</span>
                 </div>
-                <span className="text-muted-foreground">{formData.selectedSeats.length > 0 ? formData.selectedSeats.join(', ') : '-'}</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-slate-500 rounded"></div>
+                  <span>Available</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-slate-400 rounded"></div>
+                  <span>Booked</span>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="font-semibold">Selected: {formData.selectedSeats.length} seat(s)</p>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-slate-500 rounded"></div>
-                <span>Available</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-slate-400 rounded"></div>
-                <span>Booked</span>
-              </div>
-              <div className="pt-2 border-t">
-                <p className="font-semibold">Selected: {formData.selectedSeats.length} seat(s)</p>
+            </div>
+
+            <div className="booking-inner-glass space-y-4 p-5 md:p-6 border border-white/35 rounded-lg">
+              <div className="font-semibold">Passenger Details</div>
+              <div className="space-y-3 text-sm">
+                <div className="space-y-2">
+                  <Label>Full Name</Label>
+                  <Input
+                    placeholder="Enter full name"
+                    value={formData.passengers[0]?.name || ''}
+                    onChange={(e) => {
+                      const newPassengers = [...formData.passengers];
+                      newPassengers[0] = { ...newPassengers[0], name: e.target.value };
+                      setFormData({ ...formData, passengers: newPassengers });
+                    }}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Age</Label>
+                    <Input
+                      type="number"
+                      placeholder="Age"
+                      value={formData.passengers[0]?.age || ''}
+                      onChange={(e) => {
+                        const newPassengers = [...formData.passengers];
+                        newPassengers[0] = { ...newPassengers[0], age: e.target.value };
+                        setFormData({ ...formData, passengers: newPassengers });
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Gender</Label>
+                    <Select
+                      value={formData.passengers[0]?.gender || ''}
+                      onValueChange={(value) => {
+                        const newPassengers = [...formData.passengers];
+                        newPassengers[0] = { ...newPassengers[0], gender: value };
+                        setFormData({ ...formData, passengers: newPassengers });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <Button
-            onClick={() => setStep('passenger')}
+            onClick={() => {
+              const p = formData.passengers[0];
+              if (!p?.name || !p?.age || !p?.gender) {
+                toast({
+                  title: "Missing Passenger Details",
+                  description: "Please fill Name, Age and Gender before continuing",
+                  variant: "destructive",
+                });
+                return;
+              }
+              setStep('payment');
+            }}
             className="w-full"
             disabled={formData.selectedSeats.length === 0}
           >
-            Continue to Passenger Details
+            Continue to Payment
           </Button>
       </CardContent>
     </Card>
@@ -458,7 +607,7 @@ const BookTickets = () => {
             <Users className="h-5 w-5" />
             <span>Passenger Details</span>
           </CardTitle>
-          <Button variant="outline" onClick={() => setStep('seats')}>
+          <Button variant="outline" className={BACK_BUTTON_CLASS} onClick={() => setStep('seats')}>
             ← Back
           </Button>
         </div>
@@ -532,7 +681,7 @@ const BookTickets = () => {
             <CreditCard className="h-5 w-5" />
             <span>Payment</span>
           </CardTitle>
-          <Button variant="outline" onClick={() => setStep('passenger')}>
+          <Button variant="outline" className={BACK_BUTTON_CLASS} onClick={() => setStep('seats')}>
             ← Back
           </Button>
         </div>

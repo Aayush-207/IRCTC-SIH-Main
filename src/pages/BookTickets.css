@@ -114,8 +114,8 @@
 
 .coach-orientation-wrap {
   width: 100%;
-  min-height: 300px;
-  height: clamp(300px, 40vw, 420px);
+  min-height: 210px;
+  height: clamp(210px, 30vw, 300px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,8 +136,8 @@
 
 @media (max-width: 768px) {
   .coach-orientation-wrap {
-    min-height: 260px;
-    height: clamp(260px, 58vw, 340px);
+    min-height: 180px;
+    height: clamp(180px, 40vw, 240px);
   }
 
   .coach-shell-vertical {
