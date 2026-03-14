@@ -9,19 +9,27 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
+  const isTransparentRoute = isHome || isAuthRoute;
 
   const navItems = [
     { href: "/", label: "Home" },
-    { href: "/live-status", label: "Live" },
-    { href: "/pantry-cart", label: "Pantry" },
-    { href: "/view-station", label: "View Station" },
+    { href: "/?panel=live", label: "Live" },
+    { href: "/?panel=pantry", label: "Pantry" },
+    { href: "/?panel=view-station", label: "View Station" },
     { href: "/train-search", label: "Enquiries" },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path.startsWith("/?panel=")) {
+      const targetPanel = path.replace("/?panel=", "");
+      return location.pathname === "/" && location.search.includes(`panel=${targetPanel}`);
+    }
+    return location.pathname === path;
+  };
 
   return (
-    <nav className={`${isHome ? "fixed top-0 left-0 w-full" : "sticky top-0"} z-50 text-white ${isHome ? "bg-transparent" : "bg-gradient-to-r from-primary to-railway-orange shadow-md"}`}>
+    <nav className={`${isTransparentRoute ? "fixed top-0 left-0 w-full" : "sticky top-0"} z-50 text-white ${isTransparentRoute ? "bg-transparent" : "bg-gradient-to-r from-primary to-railway-orange shadow-md"}`}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}

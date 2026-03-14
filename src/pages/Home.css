@@ -50,6 +50,18 @@
 	justify-content: flex-start;
 	padding-top: 18vh;
 	padding-bottom: 12rem;
+	transition: transform 0.45s ease, opacity 0.45s ease;
+}
+
+.home-content-entered {
+	transform: translateX(0);
+	opacity: 1;
+}
+
+.home-content-leaving {
+	transform: translateX(-90px);
+	opacity: 0;
+	pointer-events: none;
 }
 
 .woox-main-caption {
@@ -192,6 +204,7 @@
 	display: flex;
 	gap: 1rem;
 	width: min(920px, calc(100% - 3.5rem));
+	transition: transform 0.45s ease, opacity 0.45s ease;
 }
 
 .woox-control {
@@ -231,6 +244,94 @@
 	line-height: 1;
 	font-weight: 700;
 	transition: color 0.25s ease;
+}
+
+.live-panel-wrap {
+	position: absolute;
+	inset: 0;
+	z-index: 22;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	pointer-events: none;
+	opacity: 0;
+	transform: translateX(120px);
+	transition: transform 0.45s ease, opacity 0.45s ease;
+}
+
+.live-panel-wrap.open {
+	opacity: 1;
+	transform: translateX(0);
+	pointer-events: auto;
+}
+
+.live-panel-shell {
+	width: min(700px, 96vw);
+}
+
+.live-panel-title {
+	font-size: clamp(1.7rem, 3.8vw, 2.4rem);
+	text-align: center;
+	color: #ffffff;
+	font-weight: 800;
+	letter-spacing: 0.2px;
+	margin-bottom: 1rem;
+	text-shadow: 0 3px 14px rgba(0, 0, 0, 0.42);
+}
+
+.live-panel-box {
+	width: 100%;
+	background: rgba(255, 255, 255, 0.18);
+	backdrop-filter: blur(8px);
+	border: 1px solid rgba(255, 255, 255, 0.32);
+	box-shadow: 0 24px 55px rgba(0, 0, 0, 0.28);
+	border-radius: 22px;
+	padding: 1.25rem;
+}
+
+.live-panel-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.9rem;
+	margin-bottom: 1rem;
+}
+
+.live-panel-fields.one-col {
+	grid-template-columns: 1fr;
+}
+
+.live-panel-field span {
+	display: block;
+	font-size: 0.82rem;
+	font-weight: 700;
+	color: rgba(255, 255, 255, 0.92);
+	margin-bottom: 0.35rem;
+}
+
+.live-panel-input {
+	background: rgba(255, 255, 255, 0.22);
+	border-color: rgba(255, 255, 255, 0.42);
+	color: #ffffff;
+	height: 2.8rem;
+}
+
+.live-panel-input::placeholder {
+	color: rgba(255, 255, 255, 0.72);
+}
+
+.live-panel-track-btn {
+	width: 100%;
+	height: 2.8rem;
+	background: #22b3c1;
+	border: 1px solid #22b3c1;
+	font-weight: 700;
+	color: #fff;
+	box-shadow: 0 10px 24px rgba(34, 179, 193, 0.32);
+}
+
+.live-panel-track-btn:hover {
+	background: #1d9ca8;
 }
 
 .woox-control.active .woox-control-number {
@@ -290,6 +391,10 @@
 
 	.woox-control-number {
 		font-size: 1.45rem;
+	}
+
+	.live-panel-fields {
+		grid-template-columns: 1fr;
 	}
 }
 
