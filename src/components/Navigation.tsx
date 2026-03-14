@@ -8,6 +8,11 @@ import railwaysLogo from "@/assets/railways-logo.jpg";
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const isPantryRoute = location.pathname === "/pantry-cart";
+  
+  // Don't show navbar on pantry-cart page
+  if (isPantryRoute) return null;
+  
   const isHome = location.pathname === "/";
   const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
   const isBookTicketsRoute = location.pathname === "/book-tickets";

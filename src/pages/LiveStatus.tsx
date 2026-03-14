@@ -34,6 +34,7 @@ type TimelineStation = {
   distance: string | number;
 };
 
+
 type TrainStatusView = {
   trainName: string;
   trainNumber: string;
