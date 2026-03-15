@@ -24,7 +24,7 @@ const Navigation = () => {
     { href: "/?panel=live", label: "Live" },
     { href: "/?panel=bookings", label: "Bookings" },
     { href: "/?panel=view-station", label: "View Station" },
-    { href: "/train-search", label: "Enquiries" },
+    { href: "/?panel=enquiries", label: "Enquiries" },
   ];
 
   const isActive = (path: string) => {

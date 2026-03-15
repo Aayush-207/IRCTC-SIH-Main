@@ -19,6 +19,7 @@ const PANEL_ORDER: Record<string, number> = {
   live: 1,
   bookings: 2,
   "view-station": 3,
+  enquiries: 4,
 };
 
 const Home = () => {
@@ -53,7 +54,11 @@ const Home = () => {
 
   const banners = [wooxBanner1, wooxBanner2, wooxBanner3, wooxBanner4];
   const panelParam = params.get("panel");
-  const activePanel = panelParam === "live" || panelParam === "bookings" || panelParam === "view-station" ? panelParam : null;
+  const activePanel = panelParam === "live" || panelParam === "bookings" || panelParam === "view-station" || panelParam === "enquiries" ? panelParam : null;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const dummyBooking = {
     bookingId: "IRCTC-9Q2M7K",
     pnr: "6523189745",
@@ -158,6 +163,60 @@ const Home = () => {
 
   const openViewStation = () => {
     navigate("/view-station", { state: { station: stationQuery } });
+  };
+
+  const handleTrainSearch = async () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+
+    setSearchError(null);
+    setIsSearching(true);
+    setSearchResults([]);
+
+    if (/^\d{3,5}$/.test(q)) {
+      try {
+        const res = await fetch(`https://erail.in/rail/getTrains.aspx?TrainNo=${q}&DataSource=0&Language=0&Cache=true`);
+        const raw = await res.text();
+        const data = raw.split("~~~~~~~~");
+        if (data[0] === "~~~~~Please try again after some time." || data[0] === "~~~~~Train not found") {
+          throw new Error(data[0].split("~").join(""));
+        }
+        let data1 = data[0].split("~").filter((el: string) => el !== "");
+        if (data1[1]?.length > 6) data1.shift();
+
+        const train = {
+          name: data1[2],
+          number: data1[1]?.replace("^", ""),
+          route: `${data1[3]} - ${data1[5]}`,
+          runningDaysBits: data1[14] || "0000000",
+          departureTime: (data1[11] || "-").replace(".", ":"),
+          arrivalTime: (data1[12] || "-").replace(".", ":"),
+          duration: ((data1[13] || "-").replace(".", ":")) + " hrs",
+          type: (data[1]?.split("~").filter((el: string) => el !== "")[11]) || 'Train'
+        };
+        const weekdays = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+        const runningDays = train.runningDaysBits.split("").map((b: string, i: number) => b === "1" ? weekdays[i] : null).filter(Boolean);
+
+        setSearchResults([{ 
+          name: train.name,
+          number: train.number,
+          route: train.route,
+          runningDays,
+          departureTime: train.departureTime,
+          arrivalTime: train.arrivalTime,
+          duration: train.duration,
+          type: train.type,
+        }]);
+      } catch (e: any) {
+        setSearchError(e?.message || "Unable to fetch train details");
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+      return;
+    }
+
+    setIsSearching(false);
   };
 
   return (
@@ -366,6 +425,56 @@ const Home = () => {
                       <Button type="button" className="live-panel-track-btn" onClick={openViewStation}>
                         Open View Station
                       </Button>
+                    </>
+                  )}
+
+                  {activePanel === "enquiries" && (
+                    <>
+                      <div className="live-panel-fields one-col">
+                        <div className="live-panel-field">
+                          <span>Train Number or Name</span>
+                          <Input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleTrainSearch()}
+                            placeholder="e.g. 12301 or Rajdhani"
+                            className="live-panel-input"
+                          />
+                        </div>
+                      </div>
+
+                      <Button type="button" className="live-panel-track-btn" onClick={handleTrainSearch} disabled={isSearching}>
+                        <Search className="h-4 w-4 mr-2" />
+                        {isSearching ? "Searching..." : "Search Train"}
+                      </Button>
+
+                      {searchError && <p className="live-panel-note live-panel-note-error">{searchError}</p>}
+                      
+                      {searchResults.length > 0 && (
+                        <div className="mt-6 space-y-4 max-h-96 overflow-y-auto">
+                          {searchResults.map((train, index) => (
+                            <div key={index} className="live-panel-result-card" style={{ background: "rgba(255,255,255,0.95)", padding: "16px", borderRadius: "8px", border: "1px solid rgba(0,0,0,0.1)" }}>
+                              <div style={{ marginBottom: "8px" }}>
+                                <strong style={{ fontSize: "16px" }}>{train.name}</strong>
+                                <span style={{ marginLeft: "12px", fontSize: "13px", color: "#666" }}>({train.number})</span>
+                              </div>
+                              <div style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>{train.route}</div>
+                              <div style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+                                Time: {train.departureTime} - {train.arrivalTime} | Duration: {train.duration}
+                              </div>
+                              <div style={{ fontSize: "12px", color: "#999" }}>Type: {train.type}</div>
+                              <Button 
+                                type="button"
+                                style={{ marginTop: "12px", width: "100%" }}
+                                onClick={() => navigate(`/book-tickets?trainNumber=${train.number}&trainName=${encodeURIComponent(train.name)}&route=${encodeURIComponent(train.route)}`)}
+                              >
+                                Book Tickets
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>

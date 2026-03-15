@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Minus, Trash2 } from "lucide-react";
+import { Plus, Minus, Trash2, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import pantryBg from "@/assets/pantry.jpg";
 
 interface CartItem {
   id: string;
@@ -16,16 +17,18 @@ interface CartItem {
 
 const PantryCart = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [trainNumber, setTrainNumber] = useState("");
   const [seatNumber, setSeatNumber] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [orderConfirmed, setOrderConfirmed] = useState(false);
   const { toast } = useToast();
 
   const VEG_BADGE = (
-    <span className="inline-flex items-center rounded-md bg-green-600 text-white text-xs px-2 py-1">VEG</span>
+    <span className="inline-flex items-center rounded-full bg-green-600/30 backdrop-blur-md border border-green-500/50 text-green-100 text-xs px-3 py-1 font-semibold">VEG</span>
   );
   const NONVEG_BADGE = (
-    <span className="inline-flex items-center rounded-md bg-red-600 text-white text-xs px-2 py-1">NON-VEG</span>
+    <span className="inline-flex items-center rounded-full bg-red-600/30 backdrop-blur-md border border-red-500/50 text-red-100 text-xs px-3 py-1 font-semibold">NON-VEG</span>
   );
 
   const dummyBooking = {
@@ -124,12 +127,12 @@ const PantryCart = () => {
     const isVeg = !!item.veg;
     
     return (
-      <Card className="hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full">
+      <Card className="border border-white/20 bg-white/10 backdrop-blur-xl hover:bg-white/15 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full">
         <img src={item.image} alt={item.name} className="w-full h-48 object-cover" />
         <CardContent className="p-4 space-y-3 flex flex-col flex-1">
           <div>
-            <h4 className="font-semibold text-base">{item.name}</h4>
-            <p className="text-xs text-muted-foreground mt-1">
+            <h4 className="font-semibold text-base text-white">{item.name}</h4>
+            <p className="text-xs text-white/65 mt-1">
               {item.description}
             </p>
           </div>
@@ -139,21 +142,21 @@ const PantryCart = () => {
           </div>
 
           <div className="flex items-center justify-between mt-auto">
-            <span className="text-lg font-bold text-primary">₹{item.price}</span>
+            <span className="text-lg font-bold text-cyan-300">₹{item.price}</span>
           </div>
 
           {cartItem ? (
             <div className="flex items-center justify-center gap-1 mt-2">
-              <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handleUpdateQuantity(item.id, -1)}>
-                <Minus className="h-3 w-3" />
+              <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-white/20 hover:bg-white/20" onClick={() => handleUpdateQuantity(item.id, -1)}>
+                <Minus className="h-3 w-3 text-white" />
               </Button>
-              <span className="font-medium w-6 text-center text-sm">{cartItem.quantity}</span>
-              <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => handleUpdateQuantity(item.id, 1)}>
-                <Plus className="h-3 w-3" />
+              <span className="font-medium w-6 text-center text-sm text-white">{cartItem.quantity}</span>
+              <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-white/20 hover:bg-white/20" onClick={() => handleUpdateQuantity(item.id, 1)}>
+                <Plus className="h-3 w-3 text-white" />
               </Button>
             </div>
           ) : (
-            <Button onClick={() => handleAddToCart(item)} className="w-full mt-2 h-9 text-sm">
+            <Button onClick={() => handleAddToCart(item)} className="w-full mt-2 h-9 text-sm bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
               <Plus className="h-3 w-3 mr-1" />
               Add to Cart
             </Button>
@@ -164,8 +167,58 @@ const PantryCart = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="relative h-screen overflow-hidden">
+      <div
+        className="absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${pantryBg})` }}
+      />
+      <div className="absolute inset-0 -z-10 bg-black/70" />
+
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-4 right-4 z-50 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full backdrop-blur-md transition-all duration-200"
+        title="Go back"
+      >
+        <ChevronLeft className="h-6 w-6" />
+      </button>
+
+      {/* Order Confirmation Popup */}
+      {orderConfirmed && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOrderConfirmed(false)} />
+          <div className="relative bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border border-green-400/30 animate-bounce">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="relative h-20 w-20 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></div>
+                  <div className="text-5xl">✓</div>
+                </div>
+              </div>
+              <h2 className="text-3xl font-extrabold text-white">Order Confirmed!</h2>
+              <p className="text-white/90 text-lg">Your meal will be delivered to your seat</p>
+              <div className="bg-white/10 rounded-lg p-3 border border-white/20 backdrop-blur-md mt-4">
+                <p className="text-sm text-white/75">Estimated Delivery Time</p>
+                <p className="text-2xl font-bold text-white">30-45 Minutes</p>
+              </div>
+              <div className="text-white/80 text-sm space-y-1">
+                <p>Train: <span className="font-semibold">Rajdhani Express</span></p>
+                <p>Seat: <span className="font-semibold">{seatNumber || '36'}</span></p>
+                <p>Total: <span className="font-semibold text-xl text-yellow-200">₹{getTotalPrice()}</span></p>
+              </div>
+              <Button 
+                onClick={() => setOrderConfirmed(false)}
+                className="w-full mt-4 bg-white text-green-600 hover:bg-white/90 font-bold h-11"
+              >
+                Continue Shopping
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="relative z-10 h-full overflow-y-auto">
+        <div className="container mx-auto px-4 max-w-7xl py-8">
         {/* Page Title */}
         <div className="text-center mb-8">
           <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-2 tracking-tight">
@@ -308,7 +361,7 @@ const PantryCart = () => {
                         <span className="text-lg font-bold text-white">₹{getTotalPrice()}</span>
                       </div>
                       
-                      <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 h-11 text-white font-semibold">
+                      <Button onClick={() => setOrderConfirmed(true)} className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 h-11 text-white font-semibold">
                         Place Order
                       </Button>
                       
@@ -323,6 +376,7 @@ const PantryCart = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

@@ -1,10 +1,18 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, Send, Bot, User, Clock, Train, Search, CreditCard } from "lucide-react";
+import wooxBanner1 from "@/assets/woox-banner-01.jpg";
+import wooxBanner2 from "@/assets/woox-banner-02.jpg";
+import wooxBanner3 from "@/assets/woox-banner-03.jpg";
+import wooxBanner4 from "@/assets/woox-banner-04.jpg";
+import "./Home.css";
+
+const SLIDE_DURATION_MS = 4300;
+const SLIDE_TRANSITION_MS = 750;
 
 interface Message {
   id: string;
@@ -24,7 +32,32 @@ const AskDisha = () => {
   ]);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [activeBanner, setActiveBanner] = useState(0);
+  const [previousBanner, setPreviousBanner] = useState<number | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const banners = [wooxBanner1, wooxBanner2, wooxBanner3, wooxBanner4];
+
+  const changeBanner = useCallback((nextIndex: number) => {
+    if (nextIndex === activeBanner) return;
+    setPreviousBanner(activeBanner);
+    setActiveBanner(nextIndex);
+  }, [activeBanner]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      changeBanner((activeBanner + 1) % banners.length);
+    }, SLIDE_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [activeBanner, banners.length, changeBanner]);
+
+  useEffect(() => {
+    if (previousBanner === null) return;
+    const cleanupTimer = window.setTimeout(() => {
+      setPreviousBanner(null);
+    }, SLIDE_TRANSITION_MS + 30);
+    return () => window.clearTimeout(cleanupTimer);
+  }, [previousBanner]);
 
   const quickQuestions = [
     { text: "Check PNR status", icon: Search },
@@ -111,9 +144,21 @@ const AskDisha = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <Card className="h-[80vh] flex flex-col">
+    <div className="woox-hero-section">
+      {/* Banner Carousel */}
+      {banners.map((banner, index) => (
+        <div
+          key={banner}
+          className={`woox-banner ${activeBanner === index ? 'active' : ''} ${previousBanner === index ? 'exiting' : ''}`}
+          style={{ backgroundImage: `url(${banner})` }}
+        >
+          <div className="woox-banner-overlay" />
+        </div>
+      ))}
+
+      {/* Content */}
+      <div className="woox-banner-inner flex items-center justify-center" style={{ minHeight: '100vh' }}>
+        <Card className="h-[80vh] flex flex-col w-full max-w-4xl mx-4">
           <CardHeader className="border-b">
             <CardTitle className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
