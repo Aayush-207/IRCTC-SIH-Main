@@ -271,6 +271,10 @@
 	max-width: min(1180px, 97vw);
 }
 
+.enquiries-panel-shell {
+	max-width: min(1200px, 98vw);
+}
+
 .live-panel-title {
 	text-align: center;
 	font-size: 1.1rem;

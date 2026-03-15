@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Clock3, Search, Trash2 } from "lucide-react";
+import { Clock3, Search, Trash2, MapPin, Clock, Train } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import wooxBanner1 from "@/assets/woox-banner-01.jpg";
 import wooxBanner2 from "@/assets/woox-banner-02.jpg";
@@ -10,6 +10,7 @@ import wooxBanner4 from "@/assets/woox-banner-04.jpg";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import StationSelect from "@/components/StationSelect";
+import trainsFile from "../../Backend/trains.json";
 import "./Home.css";
 
 const SLIDE_DURATION_MS = 4300;
@@ -59,6 +60,11 @@ const Home = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  const localTrains: any[] = useMemo(() => {
+    const raw = Array.isArray((trainsFile as any)) ? (trainsFile as any) : ((trainsFile as any).trains || []);
+    return raw;
+  }, []);
   const dummyBooking = {
     bookingId: "IRCTC-9Q2M7K",
     pnr: "6523189745",
@@ -165,59 +171,32 @@ const Home = () => {
     navigate("/view-station", { state: { station: stationQuery } });
   };
 
-  const handleTrainSearch = async () => {
+  useEffect(() => {
     const q = searchQuery.trim();
-    if (!q) return;
-
-    setSearchError(null);
-    setIsSearching(true);
-    setSearchResults([]);
-
-    if (/^\d{3,5}$/.test(q)) {
-      try {
-        const res = await fetch(`https://erail.in/rail/getTrains.aspx?TrainNo=${q}&DataSource=0&Language=0&Cache=true`);
-        const raw = await res.text();
-        const data = raw.split("~~~~~~~~");
-        if (data[0] === "~~~~~Please try again after some time." || data[0] === "~~~~~Train not found") {
-          throw new Error(data[0].split("~").join(""));
-        }
-        let data1 = data[0].split("~").filter((el: string) => el !== "");
-        if (data1[1]?.length > 6) data1.shift();
-
-        const train = {
-          name: data1[2],
-          number: data1[1]?.replace("^", ""),
-          route: `${data1[3]} - ${data1[5]}`,
-          runningDaysBits: data1[14] || "0000000",
-          departureTime: (data1[11] || "-").replace(".", ":"),
-          arrivalTime: (data1[12] || "-").replace(".", ":"),
-          duration: ((data1[13] || "-").replace(".", ":")) + " hrs",
-          type: (data[1]?.split("~").filter((el: string) => el !== "")[11]) || 'Train'
-        };
-        const weekdays = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-        const runningDays = train.runningDaysBits.split("").map((b: string, i: number) => b === "1" ? weekdays[i] : null).filter(Boolean);
-
-        setSearchResults([{ 
-          name: train.name,
-          number: train.number,
-          route: train.route,
-          runningDays,
-          departureTime: train.departureTime,
-          arrivalTime: train.arrivalTime,
-          duration: train.duration,
-          type: train.type,
-        }]);
-      } catch (e: any) {
-        setSearchError(e?.message || "Unable to fetch train details");
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
+    if (!q) {
+      setSearchResults([]);
+      setSearchError(null);
       return;
     }
 
-    setIsSearching(false);
-  };
+    // Search by train number (numeric) or by train name
+    const ql = q.toLowerCase();
+    const filtered = localTrains.filter((t: any) =>
+      (t.trainName || t.name || "").toLowerCase().includes(ql) ||
+      (t.trainno || t.number || "").toString().toLowerCase().includes(ql)
+    ).slice(0, 10).map((t: any) => ({
+      name: t.trainName || t.name || '-',
+      number: t.trainno || t.number || '-',
+      route: `${t.fromName || t.source || '-'} - ${t.toName || t.dest || '-'}`,
+      runningDays: [],
+      departureTime: t.fromTime || t.depart || '-',
+      arrivalTime: t.toTime || t.arrive || '-',
+      duration: t.travelTime || '-',
+      type: t.type || 'Train'
+    }));
+    setSearchResults(filtered);
+    setSearchError(null);
+  }, [searchQuery, localTrains]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-100">
@@ -323,44 +302,51 @@ const Home = () => {
               exit={{ opacity: 0, x: panelDirection > 0 ? -130 : 130 }}
               transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className={`live-panel-shell ${activePanel === "bookings" ? "bookings-panel-shell" : ""}`}>
+              <div className={`live-panel-shell ${activePanel === "bookings" ? "bookings-panel-shell" : ""} ${activePanel === "enquiries" ? "enquiries-panel-shell" : ""}`}>
                 <h3 className="live-panel-title">
                   {activePanel === "live" && "Live Train Status"}
                   {activePanel === "bookings" && "My Bookings"}
                   {activePanel === "view-station" && "View Station"}
                 </h3>
 
-                <div className={`live-panel-box ${activePanel === "bookings" ? "bookings-panel-box" : ""}`}>
+                <div className={`${activePanel !== "enquiries" ? "live-panel-box" : ""} ${activePanel === "bookings" ? "bookings-panel-box" : ""}`}>
                   {activePanel === "live" && (
                     <>
-                      <div className="live-panel-fields">
-                        <div className="live-panel-field">
-                          <span>Train Number</span>
+                      {/* Header Section */}
+                      <div className="text-center mb-12">
+                        <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-3 tracking-tight">
+                          Live Status
+                        </h1>
+                        <p className="text-lg md:text-xl text-white/80 font-medium">
+                          Track Your Train in Real-Time
+                        </p>
+                      </div>
+
+                      {/* Search Input Section */}
+                      <div className="mb-12">
+                        <div className="flex flex-col md:flex-row gap-3 justify-center">
                           <Input
                             type="text"
                             value={liveTrainNumber}
                             onChange={(e) => setLiveTrainNumber(e.target.value.replace(/\D/g, "").slice(0, 5))}
                             placeholder="e.g. 12301"
-                            className="live-panel-input"
+                            className="md:max-w-md bg-white/10 border-white/25 text-white placeholder:text-white/50 backdrop-blur-md rounded-lg h-11 text-lg"
                           />
-                        </div>
-                        <div className="live-panel-field">
-                          <span>Journey Date</span>
                           <Input
                             type="date"
                             value={liveDate}
                             onChange={(e) => setLiveDate(e.target.value)}
-                            className="live-panel-input"
+                            className="md:max-w-md bg-white/10 border-white/25 text-white backdrop-blur-md rounded-lg h-11 text-lg"
                           />
+                          <Button type="button" onClick={openFullLiveStatus} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold h-11 px-8 rounded-lg">
+                            <Search className="h-5 w-5 mr-2" />
+                            Track
+                          </Button>
                         </div>
+                        {liveError && (
+                          <p className="text-center mt-3 text-red-300 text-sm font-semibold">{liveError}</p>
+                        )}
                       </div>
-
-                      <Button type="button" className="live-panel-track-btn" onClick={openFullLiveStatus}>
-                        <Search className="h-4 w-4 mr-2" />
-                        Track Live Status
-                      </Button>
-
-                      {liveError && <p className="live-panel-note live-panel-note-error">{liveError}</p>}
                     </>
                   )}
 
@@ -402,77 +388,135 @@ const Home = () => {
                       <button type="button" className="bookings-trash-side" aria-label="Delete booking">
                         <Trash2 className="h-4 w-4" />
                       </button>
-
-
                     </>
                   )}
 
                   {activePanel === "view-station" && (
                     <>
-                      <div className="live-panel-fields one-col">
-                        <div className="live-panel-field">
-                          <span>Station Name</span>
+                      {/* Header Section */}
+                      <div className="text-center mb-12">
+                        <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-3 tracking-tight">
+                          View Station
+                        </h1>
+                        <p className="text-lg md:text-xl text-white/80 font-medium">
+                          Check Arrivals & Departures
+                        </p>
+                      </div>
+
+                      {/* Search Input Section */}
+                      <div className="mb-12">
+                        <div className="flex flex-col md:flex-row gap-3 justify-center">
                           <Input
                             type="text"
                             value={stationQuery}
                             onChange={(e) => setStationQuery(e.target.value)}
                             placeholder="e.g. Dadar"
-                            className="live-panel-input"
+                            className="md:max-w-md bg-white/10 border-white/25 text-white placeholder:text-white/50 backdrop-blur-md rounded-lg h-11 text-lg"
                           />
+                          <Button type="button" onClick={openViewStation} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold h-11 px-8 rounded-lg">
+                            <Search className="h-5 w-5 mr-2" />
+                            View
+                          </Button>
                         </div>
                       </div>
-
-                      <Button type="button" className="live-panel-track-btn" onClick={openViewStation}>
-                        Open View Station
-                      </Button>
                     </>
                   )}
 
                   {activePanel === "enquiries" && (
                     <>
-                      <div className="live-panel-fields one-col">
-                        <div className="live-panel-field">
-                          <span>Train Number or Name</span>
-                          <Input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleTrainSearch()}
-                            placeholder="e.g. 12301 or Rajdhani"
-                            className="live-panel-input"
-                          />
-                        </div>
+                      {/* Header Section */}
+                      <div className="text-center mb-12">
+                        <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-3 tracking-tight">
+                          Train Enquiries
+                        </h1>
+                        <p className="text-lg md:text-xl text-white/80 font-medium">
+                          Search by Train Number or Name
+                        </p>
                       </div>
 
-                      <Button type="button" className="live-panel-track-btn" onClick={handleTrainSearch} disabled={isSearching}>
-                        <Search className="h-4 w-4 mr-2" />
-                        {isSearching ? "Searching..." : "Search Train"}
-                      </Button>
+                      {/* Search Input Section */}
+                      <div className="mb-12">
+                        <div className="flex flex-col md:flex-row gap-3 justify-center">
+                          <Input
+                            placeholder="e.g. 12301 or Rajdhani"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full md:flex-1 bg-white/10 border-white/25 text-white placeholder:text-white/50 backdrop-blur-md rounded-lg h-11 text-lg"
+                          />
+                        </div>
+                        {searchError && (
+                          <p className="text-center mt-3 text-red-300 text-sm font-semibold">{searchError}</p>
+                        )}
+                      </div>
 
-                      {searchError && <p className="live-panel-note live-panel-note-error">{searchError}</p>}
-                      
+                      {/* Search Results */}
                       {searchResults.length > 0 && (
-                        <div className="mt-6 space-y-4 max-h-96 overflow-y-auto">
+                        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                           {searchResults.map((train, index) => (
-                            <div key={index} className="live-panel-result-card" style={{ background: "rgba(255,255,255,0.95)", padding: "16px", borderRadius: "8px", border: "1px solid rgba(0,0,0,0.1)" }}>
-                              <div style={{ marginBottom: "8px" }}>
-                                <strong style={{ fontSize: "16px" }}>{train.name}</strong>
-                                <span style={{ marginLeft: "12px", fontSize: "13px", color: "#666" }}>({train.number})</span>
+                            <div key={index} className="border border-white/20 bg-white/10 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 rounded-lg p-5">
+                              {/* Train Header */}
+                              <div className="flex items-start justify-between mb-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <Train className="h-5 w-5 text-cyan-300" />
+                                    <h3 className="text-xl font-extrabold text-white">{train.name}</h3>
+                                    <span className="bg-white/20 text-white border-white/30 border text-white font-bold text-xs px-2 py-1 rounded">
+                                      {train.number}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-white/75">
+                                    <MapPin className="h-4 w-4" />
+                                    <span className="text-sm font-semibold">{train.route}</span>
+                                  </div>
+                                </div>
+                                <span className={`backdrop-blur-md border text-xs font-bold px-3 py-1 rounded whitespace-nowrap ml-4 ${
+                                  train.type === 'Superfast' ? 'bg-orange-600/30 border-orange-400/50 text-orange-100' :
+                                  train.type === 'Duronto' ? 'bg-blue-600/30 border-blue-400/50 text-blue-100' :
+                                  'bg-white/20 border-white/30 text-white'
+                                }`}>
+                                  {train.type}
+                                </span>
                               </div>
-                              <div style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>{train.route}</div>
-                              <div style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
-                                Time: {train.departureTime} - {train.arrivalTime} | Duration: {train.duration}
+
+                              {/* Train Details */}
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div className="space-y-2">
+                                  <p className="text-xs text-white/60 font-semibold uppercase">Departure - Arrival</p>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-5 w-5 text-cyan-300" />
+                                    <span className="text-lg font-bold text-white">{train.departureTime}</span>
+                                    <span className="text-white/60">-</span>
+                                    <span className="text-lg font-bold text-white">{train.arrivalTime}</span>
+                                  </div>
+                                  <p className="text-xs text-white/70">Duration: <span className="font-semibold">{train.duration}</span></p>
+                                </div>
+
+                                {/* Book Button */}
+                                <Button 
+                                  onClick={() => navigate(`/book-tickets?trainNumber=${train.number}&trainName=${encodeURIComponent(train.name)}&route=${encodeURIComponent(train.route)}`)}
+                                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold px-6 py-2 h-auto rounded-lg whitespace-nowrap"
+                                >
+                                  Book Now
+                                </Button>
                               </div>
-                              <div style={{ fontSize: "12px", color: "#999" }}>Type: {train.type}</div>
-                              <Button 
-                                type="button"
-                                style={{ marginTop: "12px", width: "100%" }}
-                                onClick={() => navigate(`/book-tickets?trainNumber=${train.number}&trainName=${encodeURIComponent(train.name)}&route=${encodeURIComponent(train.route)}`)}
-                              >
-                                Book Tickets
-                              </Button>
                             </div>
                           ))}
+                        </div>
+                      )}
+
+                      {/* Empty States */}
+                      {searchQuery && searchResults.length === 0 && !isSearching && !searchError && (
+                        <div className="text-center py-12">
+                          <Train className="h-16 w-16 text-white/40 mx-auto mb-4" />
+                          <p className="text-white/80 text-lg font-semibold">No trains found for "{searchQuery}"</p>
+                          <p className="text-white/60 text-sm mt-2">Try searching with train number or a different name</p>
+                        </div>
+                      )}
+
+                      {!searchQuery && searchResults.length === 0 && !searchError && (
+                        <div className="text-center py-12">
+                          <Search className="h-16 w-16 text-white/40 mx-auto mb-4" />
+                          <p className="text-white/80 text-lg font-semibold">Enter train number or name to search</p>
                         </div>
                       )}
                     </>
