@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { MapPin, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import viewstationBg from "@/assets/viewstation.jpg";
 
 // Station coordinates mapping (major Indian railway stations)
 const STATION_COORDINATES: Record<string, { lat: number; lng: number; fullName: string }> = {
@@ -31,7 +32,9 @@ const ViewStation = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
+  const streetViewRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const streetViewInstanceRef = useRef<google.maps.StreetViewPanorama | null>(null);
 
   const stationQuery = params.get("station") || "DADAR";
   const stationKey = Object.keys(STATION_COORDINATES).find(
@@ -56,12 +59,22 @@ const ViewStation = () => {
         ]
       });
 
-      new google.maps.Marker({
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<div style="color: #000; font-weight: bold; padding: 5px;">${stationCoords.fullName}</div>`
+      });
+
+      const marker = new google.maps.Marker({
         position: { lat: stationCoords.lat, lng: stationCoords.lng },
         map: map,
         title: stationCoords.fullName,
         icon: "http://maps.google.com/mapfiles/ms/icons/cyan-dot.png"
       });
+
+      marker.addListener("click", () => {
+        infoWindow.open(map, marker);
+      });
+
+      infoWindow.open(map, marker);
 
       mapInstanceRef.current = map;
     } else if (mapInstanceRef.current) {
@@ -70,50 +83,110 @@ const ViewStation = () => {
     }
   }, [stationCoords]);
 
+  // Initialize Street View
+  useEffect(() => {
+    if (streetViewRef.current && !streetViewInstanceRef.current) {
+      const streetView = new google.maps.StreetViewPanorama(streetViewRef.current, {
+        position: { lat: stationCoords.lat, lng: stationCoords.lng },
+        pov: { heading: 120, pitch: 0 },
+        zoom: 1,
+        addressControl: true,
+        linksControl: true,
+        panControl: true,
+        enableCloseButton: false
+      });
+      streetViewInstanceRef.current = streetView;
+    } else if (streetViewInstanceRef.current) {
+      streetViewInstanceRef.current.setPosition({ lat: stationCoords.lat, lng: stationCoords.lng });
+    }
+  }, [stationCoords]);
+
+  const glassCardClass = "border border-white/20 bg-white/10 backdrop-blur-md text-white";
+
   return (
-    <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ backgroundImage: `linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(34, 179, 193, 0.15) 100%)`, backgroundColor: "#0f172a" }}>
-      <nav className="bg-black/40 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Button onClick={() => navigate("/")} className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold px-6 py-2 rounded-lg">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
-          </Button>
-          <h1 className="text-2xl font-bold text-white">IRCTC Railways</h1>
-          <div className="w-32"></div>
-        </div>
-      </nav>
+    <div className="relative h-screen overflow-hidden">
+      {/* Fixed Background Image */}
+      <div
+        className="absolute inset-0 -z-20 bg-cover bg-center bg-fixed bg-no-repeat"
+        style={{ backgroundImage: `url(${viewstationBg})` }}
+      />
+      {/* Fixed Back Button - Top Left */}
+      <button
+        onClick={() => navigate("/")}
+        className="fixed top-6 left-6 z-20 flex items-center gap-0 py-3 pl-3 pr-3 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold shadow-lg transition-all duration-300 overflow-hidden w-12 hover:w-auto group" 
+        title="Back to Home"
+      >
+        <ArrowLeft className="h-5 w-5 flex-shrink-0" />
+        <span className="opacity-0 group-hover:opacity-100 whitespace-nowrap text-sm font-medium transition-opacity duration-300 ml-2">Back to Home</span>
+      </button>
+      {/* Overlay - only on background, not on content */}
+      <div className="absolute inset-0 -z-10 bg-black/30 pointer-events-none" />
 
-      <div className="container mx-auto px-6 py-12 max-w-5xl">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 tracking-tight">View Station</h1>
-          <p className="text-xl md:text-2xl text-cyan-300 font-semibold">{stationCoords.fullName}</p>
-        </div>
+      {/* Scrollable Content */}
+      <div className="relative z-10 h-full overflow-y-auto">
+        <div className="container mx-auto px-4 max-w-5xl pt-12 pb-10">
 
-        <div className="bg-white/10 backdrop-blur-md border border-white/25 rounded-xl p-8 mb-8 shadow-2xl">
-          <div className="grid md:grid-cols-2 gap-8 mb-6">
-            <div>
-              <h2 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Station Details
-              </h2>
-              <p className="text-white/80 text-base mb-3"><span className="font-semibold text-white">Name:</span> {stationCoords.fullName}</p>
-              <p className="text-white/80 text-base mb-3"><span className="font-semibold text-white">Latitude:</span> {stationCoords.lat.toFixed(4)}°</p>
-              <p className="text-white/80 text-base"><span className="font-semibold text-white">Longitude:</span> {stationCoords.lng.toFixed(4)}°</p>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-cyan-300 mb-4">Quick Info</h2>
-              <p className="text-white/70 text-sm mb-4">This station is displayed on an interactive Google Map below. You can zoom in/out, drag to explore the surrounding areas, and see the exact location of the railway station.</p>
-              <p className="text-white/70 text-sm">The marker indicates the precise station location for reference.</p>
-            </div>
+          {/* Header - with top padding for fixed button */}
+          <div className="text-center mb-12 mt-6">
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white mb-2">
+              View Station
+            </h1>
+            <p className="text-2xl md:text-3xl text-cyan-300 font-semibold">
+              {stationCoords.fullName}
+            </p>
           </div>
-        </div>
 
-        <div className="bg-white/10 backdrop-blur-md border border-white/25 rounded-xl overflow-hidden shadow-2xl mb-8">
-          <div ref={mapRef} className="w-full bg-gradient-to-br from-white/5 to-white/10" style={{ minHeight: "450px" }} />
-        </div>
+          {/* Station Details Text */}
+          <div className="mb-6 px-4 text-center">
+            <p className="text-white/70 text-base mb-2">
+              <span className="font-semibold text-cyan-300">Location:</span> {stationCoords.fullName}
+            </p>
+            <p className="text-white/70 text-base mb-2">
+              <span className="font-semibold text-cyan-300">Latitude:</span> {stationCoords.lat.toFixed(4)}°
+            </p>
+            <p className="text-white/70 text-base">
+              <span className="font-semibold text-cyan-300">Longitude:</span> {stationCoords.lng.toFixed(4)}°
+            </p>
+          </div>
 
-        <div className="text-center">
-          <p className="text-white/60 text-sm">Map powered by Google Maps • Coordinates in decimal format (WGS84)</p>
+          {/* Map Card */}
+          <Card className={glassCardClass + " mb-8"}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-cyan-300" />
+                <span>Station Location Map</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div
+                ref={mapRef}
+                className="w-full rounded-lg bg-gradient-to-br from-white/5 to-white/10 overflow-hidden"
+                style={{ minHeight: "500px" }}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Street View Card */}
+          <Card className="border border-white/20 bg-white/10 text-white mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-cyan-300" />
+                <span>Street View</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div
+                ref={streetViewRef}
+                className="w-full rounded-lg overflow-hidden"
+                style={{ minHeight: "500px" }}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Footer Info */}
+          <div className="text-center text-white/60 text-sm">
+            <p>Map powered by Google Maps • Coordinates in decimal format (WGS84)</p>
+          </div>
         </div>
       </div>
     </div>

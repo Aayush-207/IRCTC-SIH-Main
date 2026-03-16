@@ -92,7 +92,7 @@ const MapComponent = ({ stations }: { stations: TimelineStation[] }) => {
           resolve(null);
         });
       });
-
+      
     const drawRoute = async () => {
       const routePath: google.maps.LatLngLiteral[] = [];
 

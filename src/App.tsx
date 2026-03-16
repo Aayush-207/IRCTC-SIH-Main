@@ -39,6 +39,7 @@ const AnimatedRoutes = () => {
   const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
   const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
+  const hideNavbar = location.pathname === "/view-station" || location.pathname === "/live-status";
   const previousPathRef = useRef(location.pathname);
   const directionRef = useRef(1);
 
@@ -61,46 +62,52 @@ const AnimatedRoutes = () => {
   const routeTransitionKey = isAuthRoute ? "auth" : location.pathname;
 
   return (
-    <main className="route-transition-viewport">
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={routeTransitionKey}
-          initial={initial}
-          animate={animate}
-          exit={exit}
-          transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="route-transition-shell"
-        >
-          <Routes location={location}>
-            <Route path="/" element={<Home />} />
-            <Route path="/book-tickets" element={<BookTickets />} />
-            <Route path="/pantry-cart" element={<PantryCart />} />
-            <Route path="/train-search" element={<TrainSearch />} />
-            <Route path="/live-status" element={<LiveStatus />} />
-            <Route path="/pnr-status" element={<PNRStatus />} />
-            <Route path="/at-station" element={<AtStation />} />
-            <Route path="/ask-disha" element={<AskDisha />} />
-            <Route path="/view-station" element={<ViewStation />} />
-            <Route path="/login" element={<Auth />} />
-            <Route path="/signup" element={<Auth />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </motion.div>
-      </AnimatePresence>
-    </main>
+    <>
+      {!hideNavbar && <Navigation />}
+      <main className="route-transition-viewport">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={routeTransitionKey}
+            initial={initial}
+            animate={animate}
+            exit={exit}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="route-transition-shell"
+          >
+            <Routes location={location}>
+              <Route path="/" element={<Home />} />
+              <Route path="/book-tickets" element={<BookTickets />} />
+              <Route path="/pantry-cart" element={<PantryCart />} />
+              <Route path="/train-search" element={<TrainSearch />} />
+              <Route path="/live-status" element={<LiveStatus />} />
+              <Route path="/pnr-status" element={<PNRStatus />} />
+              <Route path="/at-station" element={<AtStation />} />
+              <Route path="/ask-disha" element={<AskDisha />} />
+              <Route path="/view-station" element={<ViewStation />} />
+              <Route path="/login" element={<Auth />} />
+              <Route path="/signup" element={<Auth />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
+      </main>
+    </>
   );
 };
+
+const AppRoutes = () => (
+  <BrowserRouter>
+    <AnimatedRoutes />
+    <AskDishaFab />
+  </BrowserRouter>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Navigation />
-        <AnimatedRoutes />
-        <AskDishaFab />
-      </BrowserRouter>
+      <AppRoutes />
     </TooltipProvider>
   </QueryClientProvider>
 );
