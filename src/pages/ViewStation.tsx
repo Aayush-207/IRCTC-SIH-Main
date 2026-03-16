@@ -1,114 +1,123 @@
 import { useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Wrapper, Status } from "@googlemaps/react-wrapper";
-import { Building } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { MapPin, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-const DADAR_COORDS = { lat: 19.0183, lng: 72.8423 };
-
-const StreetView = () => {
-  const panoRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (panoRef.current) {
-      const panorama = new google.maps.StreetViewPanorama(panoRef.current, {
-        position: DADAR_COORDS,
-        pov: { heading: 120, pitch: 0 },
-        zoom: 1,
-        addressControl: true,
-        linksControl: true,
-        panControl: true,
-        enableCloseButton: false,
-      });
-
-      // Attempt to find a nearby panorama if exact position isn't available
-      const sv = new google.maps.StreetViewService();
-      sv.getPanorama({ location: DADAR_COORDS, radius: 150 }, (data, status) => {
-        if (status === google.maps.StreetViewStatus.OK && data?.location?.pano) {
-          panorama.setPano(data.location.pano);
-          panorama.setPov({ heading: 120, pitch: 0 });
-          panorama.setVisible(true);
-        }
-      });
-    }
-  }, []);
-
-  return <div ref={panoRef} className="w-full h-[28rem] rounded-xl ring-1 ring-border shadow-sm" />;
-};
-
-const render = (status: Status) => {
-  if (status === Status.LOADING) {
-    return (
-      <div className="w-full h-[28rem] rounded-lg bg-muted flex items-center justify-center">
-        <div className="text-center text-sm text-muted-foreground">Loading Street View…</div>
-      </div>
-    );
-  }
-  if (status === Status.FAILURE) {
-    // Fallback embedded Street View iframe for Dadar Station
-    const iframeSrc = `https://www.google.com/maps?q=&layer=c&cbll=${DADAR_COORDS.lat},${DADAR_COORDS.lng}&cbp=11,120,0,0,0&hl=en&output=svembed`;
-    return (
-      <iframe
-        title="Dadar Station Street View"
-        src={iframeSrc}
-        className="w-full h-[28rem] rounded-lg border"
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        allowFullScreen
-      />
-    );
-  }
-  return <StreetView />;
+// Station coordinates mapping (major Indian railway stations)
+const STATION_COORDINATES: Record<string, { lat: number; lng: number; fullName: string }> = {
+  "DADAR": { lat: 19.0183, lng: 72.8423, fullName: "Dadar Railway Station, Mumbai" },
+  "VICTORIA TERMINUS": { lat: 18.9641, lng: 72.8345, fullName: "Victoria Terminus Station, Mumbai" },
+  "HOWRAH JN": { lat: 22.5958, lng: 88.2624, fullName: "Howrah Junction, Kolkata" },
+  "NEW DELHI": { lat: 28.5431, lng: 77.1025, fullName: "New Delhi Railway Station" },
+  "CENTRAL": { lat: 18.9676, lng: 72.8194, fullName: "Central Railway Station, Mumbai" },
+  "BORIVALI": { lat: 19.2183, lng: 72.8091, fullName: "Borivali Railway Station, Mumbai" },
+  "VIRAR": { lat: 19.4649, lng: 72.7858, fullName: "Virar Railway Station, Mumbai" },
+  "CHURCHGATE": { lat: 18.9568, lng: 72.8237, fullName: "Churchgate Railway Station, Mumbai" },
+  "BANDRA": { lat: 19.0596, lng: 72.8295, fullName: "Bandra Railway Station, Mumbai" },
+  "THANE": { lat: 19.2183, lng: 72.9789, fullName: "Thane Railway Station, Mumbai" },
+  "PUNE JN": { lat: 18.5272, lng: 73.85, fullName: "Pune Junction Railway Station" },
+  "BANGALORE": { lat: 12.972, lng: 77.5936, fullName: "Bangalore City Railway Station" },
+  "HYDERABAD": { lat: 17.3703, lng: 78.4734, fullName: "Hyderabad Deccan Railway Station" },
+  "KOLKATA": { lat: 22.5593, lng: 88.3391, fullName: "Kolkata Railway Station" },
+  "INDORE JN": { lat: 22.7196, lng: 75.8615, fullName: "Indore Junction Railway Station" },
+  "BHOPAL JN": { lat: 23.1825, lng: 77.4625, fullName: "Bhopal Junction Railway Station" },
+  "DELHI": { lat: 28.6431, lng: 77.3025, fullName: "Delhi Railway Station" },
+  "NAGPUR": { lat: 21.1458, lng: 79.0882, fullName: "Nagpur Railway Station" },
+  "LUCKNOW": { lat: 26.8406, lng: 80.9267, fullName: "Lucknow Junction Railway Station" },
+  "JAIPUR": { lat: 26.8124, lng: 75.8431, fullName: "Jaipur Junction Railway Station" },
 };
 
 const ViewStation = () => {
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+
+  const stationQuery = params.get("station") || "DADAR";
+  const stationKey = Object.keys(STATION_COORDINATES).find(
+    k => k.toLowerCase() === stationQuery.trim().toUpperCase()
+  );
+  const stationCoords = stationKey ? STATION_COORDINATES[stationKey] : STATION_COORDINATES["DADAR"];
+
+  // Initialize Google Map
+  useEffect(() => {
+    if (mapRef.current && !mapInstanceRef.current) {
+      const map = new google.maps.Map(mapRef.current, {
+        zoom: 15,
+        center: { lat: stationCoords.lat, lng: stationCoords.lng },
+        styles: [
+          { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
+          { elementType: "labels.text.stroke", stylers: [{ color: "#1a1a2e" }] },
+          { elementType: "labels.text.fill", stylers: [{ color: "#bdbdbd" }] },
+          { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#22b3c1" }, { lightness: 10 }] },
+          { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#22b3c1" }, { lightness: 20 }] },
+          { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#22b3c1" }] },
+          { featureType: "water", elementType: "geometry", stylers: [{ color: "#0a1929" }] }
+        ]
+      });
+
+      new google.maps.Marker({
+        position: { lat: stationCoords.lat, lng: stationCoords.lng },
+        map: map,
+        title: stationCoords.fullName,
+        icon: "http://maps.google.com/mapfiles/ms/icons/cyan-dot.png"
+      });
+
+      mapInstanceRef.current = map;
+    } else if (mapInstanceRef.current) {
+      const map = mapInstanceRef.current;
+      map.setCenter({ lat: stationCoords.lat, lng: stationCoords.lng });
+    }
+  }, [stationCoords]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-100 py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <Card className="border card-glow">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-railway-orange/10 rounded-t-xl border-b">
-            <CardTitle>
-              <div className="flex items-center justify-center">
-                <div className="flex items-center gap-3">
-                  <span className="hidden sm:block h-px w-12 bg-gradient-to-r from-transparent via-primary to-transparent" />
-                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full border-2 widget-glow ring-1 ring-inset ring-primary/20 bg-white/70 backdrop-blur">
-                    <Building className="h-7 w-7 text-primary" />
-                    <span className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-900 via-zinc-700 to-primary bg-clip-text text-transparent">View Station</span>
-                  </div>
-                  <span className="hidden sm:block h-px w-12 bg-gradient-to-r from-transparent via-primary to-transparent" />
-                </div>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold">Dadar Railway Station, Mumbai</h2>
-              <p className="text-sm text-muted-foreground">Explore the station surroundings in 360° Street View.</p>
-            </div>
+    <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ backgroundImage: `linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(34, 179, 193, 0.15) 100%)`, backgroundColor: "#0f172a" }}>
+      <nav className="bg-black/40 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <Button onClick={() => navigate("/")} className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold px-6 py-2 rounded-lg">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Button>
+          <h1 className="text-2xl font-bold text-white">IRCTC Railways</h1>
+          <div className="w-32"></div>
+        </div>
+      </nav>
 
-            <Wrapper apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} render={render} />
+      <div className="container mx-auto px-6 py-12 max-w-5xl">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 tracking-tight">View Station</h1>
+          <p className="text-xl md:text-2xl text-cyan-300 font-semibold">{stationCoords.fullName}</p>
+        </div>
 
-            {/* Fallback link */}
-            <div className="text-xs text-muted-foreground">
-              If Street View doesn’t load, you can also explore using Google Maps: <a className="text-primary underline" href="https://www.google.com/maps/@19.0183,72.8423,3a,75y,120h,90t/data=!3m6!1e1" target="_blank" rel="noreferrer">Open 360° view</a>.
+        <div className="bg-white/10 backdrop-blur-md border border-white/25 rounded-xl p-8 mb-8 shadow-2xl">
+          <div className="grid md:grid-cols-2 gap-8 mb-6">
+            <div>
+              <h2 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Station Details
+              </h2>
+              <p className="text-white/80 text-base mb-3"><span className="font-semibold text-white">Name:</span> {stationCoords.fullName}</p>
+              <p className="text-white/80 text-base mb-3"><span className="font-semibold text-white">Latitude:</span> {stationCoords.lat.toFixed(4)}°</p>
+              <p className="text-white/80 text-base"><span className="font-semibold text-white">Longitude:</span> {stationCoords.lng.toFixed(4)}°</p>
             </div>
+            <div>
+              <h2 className="text-lg font-semibold text-cyan-300 mb-4">Quick Info</h2>
+              <p className="text-white/70 text-sm mb-4">This station is displayed on an interactive Google Map below. You can zoom in/out, drag to explore the surrounding areas, and see the exact location of the railway station.</p>
+              <p className="text-white/70 text-sm">The marker indicates the precise station location for reference.</p>
+            </div>
+          </div>
+        </div>
 
-            {/* Dadar Station Map Image */}
-            <div className="pt-4">
-              <h3 className="text-sm font-semibold mb-2">Dadar Station Map</h3>
-              <div className="w-full h-[40rem] rounded-xl border bg-muted flex items-center justify-center overflow-hidden ring-1 ring-border">
-                <img
-                  src="/Station.jpg"
-                  alt="Dadar Station Map"
-                  className="w-full h-full max-w-full max-h-full object-contain block"
-                  loading="lazy"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white/10 backdrop-blur-md border border-white/25 rounded-xl overflow-hidden shadow-2xl mb-8">
+          <div ref={mapRef} className="w-full bg-gradient-to-br from-white/5 to-white/10" style={{ minHeight: "450px" }} />
+        </div>
+
+        <div className="text-center">
+          <p className="text-white/60 text-sm">Map powered by Google Maps • Coordinates in decimal format (WGS84)</p>
+        </div>
       </div>
     </div>
   );
 };
 
-export default ViewStation; 
+export default ViewStation;

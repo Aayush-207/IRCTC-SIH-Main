@@ -23,6 +23,30 @@ const PANEL_ORDER: Record<string, number> = {
   enquiries: 4,
 };
 
+// Station coordinates mapping (major Indian railway stations)
+const STATION_COORDINATES: Record<string, { lat: number; lng: number; fullName: string }> = {
+  "DADAR": { lat: 19.0183, lng: 72.8423, fullName: "Dadar Railway Station, Mumbai" },
+  "VICTORIA TERMINUS": { lat: 18.9641, lng: 72.8345, fullName: "Victoria Terminus Station, Mumbai" },
+  "HOWRAH JN": { lat: 22.5958, lng: 88.2624, fullName: "Howrah Junction, Kolkata" },
+  "NEW DELHI": { lat: 28.5431, lng: 77.1025, fullName: "New Delhi Railway Station" },
+  "CENTRAL": { lat: 18.9676, lng: 72.8194, fullName: "Central Railway Station, Mumbai" },
+  "BORIVALI": { lat: 19.2183, lng: 72.8091, fullName: "Borivali Railway Station, Mumbai" },
+  "VIRAR": { lat: 19.4649, lng: 72.7858, fullName: "Virar Railway Station, Mumbai" },
+  "CHURCHGATE": { lat: 18.9568, lng: 72.8237, fullName: "Churchgate Railway Station, Mumbai" },
+  "BANDRA": { lat: 19.0596, lng: 72.8295, fullName: "Bandra Railway Station, Mumbai" },
+  "THANE": { lat: 19.2183, lng: 72.9789, fullName: "Thane Railway Station, Mumbai" },
+  "PUNE JN": { lat: 18.5272, lng: 73.85, fullName: "Pune Junction Railway Station" },
+  "BANGALORE": { lat: 12.972, lng: 77.5936, fullName: "Bangalore City Railway Station" },
+  "HYDERABAD": { lat: 17.3703, lng: 78.4734, fullName: "Hyderabad Deccan Railway Station" },
+  "KOLKATA": { lat: 22.5593, lng: 88.3391, fullName: "Kolkata Railway Station" },
+  "INDORE JN": { lat: 22.7196, lng: 75.8615, fullName: "Indore Junction Railway Station" },
+  "BHOPAL JN": { lat: 23.1825, lng: 77.4625, fullName: "Bhopal Junction Railway Station" },
+  "DELHI": { lat: 28.6431, lng: 77.3025, fullName: "Delhi Railway Station" },
+  "NAGPUR": { lat: 21.1458, lng: 79.0882, fullName: "Nagpur Railway Station" },
+  "LUCKNOW": { lat: 26.8406, lng: 80.9267, fullName: "Lucknow Junction Railway Station" },
+  "JAIPUR": { lat: 26.8124, lng: 75.8431, fullName: "Jaipur Junction Railway Station" },
+};
+
 const Home = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -168,7 +192,11 @@ const Home = () => {
   };
 
   const openViewStation = () => {
-    navigate("/view-station", { state: { station: stationQuery } });
+    if (!stationQuery.trim()) {
+      toast({ title: "Please select a station" });
+      return;
+    }
+    navigate(`/view-station?station=${encodeURIComponent(stationQuery.toUpperCase())}`);
   };
 
   useEffect(() => {
@@ -197,6 +225,8 @@ const Home = () => {
     setSearchResults(filtered);
     setSearchError(null);
   }, [searchQuery, localTrains]);
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-100">
@@ -309,14 +339,11 @@ const Home = () => {
                   {activePanel === "view-station" && "View Station"}
                 </h3>
 
-                <div className={`${activePanel !== "enquiries" ? "live-panel-box" : ""} ${activePanel === "bookings" ? "bookings-panel-box" : ""}`}>
+                <>
                   {activePanel === "live" && (
                     <>
                       {/* Header Section */}
                       <div className="text-center mb-12">
-                        <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-3 tracking-tight">
-                          Live Status
-                        </h1>
                         <p className="text-lg md:text-xl text-white/80 font-medium">
                           Track Your Train in Real-Time
                         </p>
@@ -351,44 +378,53 @@ const Home = () => {
                   )}
 
                   {activePanel === "bookings" && (
-                    <>
-                      <div className="bookings-featured-card">
-                        <div className="bookings-featured-head">
-                          <span>Upcoming Journey</span>
-                          <span className="bookings-status-pill">{dummyBooking.status}</span>
-                        </div>
-
-                        <div className="bookings-featured-grid">
-                          <div className="bookings-col-left">
-                            <p><strong>{dummyBooking.trainName}</strong> ({dummyBooking.trainNumber})</p>
-                            <p>{dummyBooking.from} to {dummyBooking.to}</p>
-                            <p>Journey Date: {dummyBooking.journeyDate}</p>
-                          </div>
-
-                          <div className="bookings-col-center">
-                            <p>PNR: {dummyBooking.pnr}</p>
-                            <p>Coach/Seat: {dummyBooking.coach}/{dummyBooking.seat}</p>
-                            <p>Class: {dummyBooking.classType} • Quota: {dummyBooking.quota}</p>
-                            <p>Booking ID: {dummyBooking.bookingId}</p>
-                          </div>
-
-                          <div className="bookings-col bookings-col-right">
-                            <div className="bookings-info-inline bookings-info-inline-right">
-                              <div className="live-panel-info-title"><Clock3 className="h-4 w-4" /> Meal Service</div>
-                              <p>Seat delivery available for this booking.</p>
-                            </div>
-
-                            <Button type="button" className="bookings-meal-btn" onClick={openPantryFromBooking}>
-                              Book Your Meal
-                            </Button>
-                          </div>
-                        </div>
+                    <div className="flex flex-col items-start w-full mt-12">
+                      {/* Header Section */}
+                      <div className="text-center mb-4 w-full">
+                        <p className="text-lg md:text-xl text-white/80 font-medium">
+                          Your Upcoming Journey
+                        </p>
                       </div>
 
-                      <button type="button" className="bookings-trash-side" aria-label="Delete booking">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </>
+                      <div className="flex gap-3 items-start w-full">
+                        <div className="bookings-featured-card flex-1">
+                          <div className="bookings-featured-head">
+                            <span>Upcoming Journey</span>
+                            <span className="bookings-status-pill">{dummyBooking.status}</span>
+                          </div>
+
+                          <div className="bookings-featured-grid">
+                            <div className="bookings-col-left">
+                              <p><strong>{dummyBooking.trainName}</strong> ({dummyBooking.trainNumber})</p>
+                              <p>{dummyBooking.from} to {dummyBooking.to}</p>
+                              <p>Journey Date: {dummyBooking.journeyDate}</p>
+                            </div>
+
+                            <div className="bookings-col-center">
+                              <p>PNR: {dummyBooking.pnr}</p>
+                              <p>Coach/Seat: {dummyBooking.coach}/{dummyBooking.seat}</p>
+                              <p>Class: {dummyBooking.classType} • Quota: {dummyBooking.quota}</p>
+                              <p>Booking ID: {dummyBooking.bookingId}</p>
+                            </div>
+
+                            <div className="bookings-col bookings-col-right">
+                              <div className="bookings-info-inline bookings-info-inline-right">
+                                <div className="live-panel-info-title"><Clock3 className="h-4 w-4" /> Meal Service</div>
+                                <p>Seat delivery available for this booking.</p>
+                              </div>
+
+                              <Button type="button" className="bookings-meal-btn" onClick={openPantryFromBooking}>
+                                Book Your Meal
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button type="button" className="bookings-trash-side" aria-label="Delete booking">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
                   )}
 
                   {activePanel === "view-station" && (
@@ -399,25 +435,26 @@ const Home = () => {
                           View Station
                         </h1>
                         <p className="text-lg md:text-xl text-white/80 font-medium">
-                          Check Arrivals & Departures
+                          Select a station to view location & details
                         </p>
                       </div>
 
-                      {/* Search Input Section */}
-                      <div className="mb-12">
-                        <div className="flex flex-col md:flex-row gap-3 justify-center">
-                          <Input
-                            type="text"
-                            value={stationQuery}
-                            onChange={(e) => setStationQuery(e.target.value)}
-                            placeholder="e.g. Dadar"
-                            className="md:max-w-md bg-white/10 border-white/25 text-white placeholder:text-white/50 backdrop-blur-md rounded-lg h-11 text-lg"
+                      {/* Station Selection & Search */}
+                      <div className="flex flex-col md:flex-row gap-4 justify-center items-end max-w-lg mx-auto">
+                        <div className="flex-1 w-full">
+                          <StationSelect
+                            label="Station Name"
+                            placeholder="e.g., Dadar or Mumbai Central"
+                            valueCode={stationQuery}
+                            onChangeCode={(code) => setStationQuery(code)}
                           />
-                          <Button type="button" onClick={openViewStation} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold h-11 px-8 rounded-lg">
-                            <Search className="h-5 w-5 mr-2" />
-                            View
-                          </Button>
                         </div>
+                        <Button
+                          onClick={openViewStation}
+                          className="w-full md:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold px-8 py-2 rounded-lg"
+                        >
+                          Search
+                        </Button>
                       </div>
                     </>
                   )}
@@ -521,7 +558,7 @@ const Home = () => {
                       )}
                     </>
                   )}
-                </div>
+                </>
               </div>
             </motion.div>
           )}

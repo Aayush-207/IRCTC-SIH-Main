@@ -510,7 +510,6 @@
 
 .bookings-trash-side {
 	flex-shrink: 0;
-	align-self: flex-start;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -522,8 +521,7 @@
 	color: #fecaca;
 	transition: all 0.25s ease;
 	cursor: pointer;
-	margin-left: 0.8rem;
-	margin-top: 0.3rem;
+	margin-top: 0;
 }
 .bookings-trash-side:hover {
 	background: rgba(239, 68, 68, 0.28);

@@ -284,7 +284,7 @@ const BookTickets = () => {
         </div>
 
         <div className="flex justify-center">
-          <Button variant="outline" size="sm" onClick={() => setFormData(prev => ({...prev, from: prev.to, to: prev.from}))}>
+          <Button onClick={() => setFormData(prev => ({...prev, from: prev.to, to: prev.from}))} className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold px-4 py-2 rounded-lg">
             <ArrowLeftRight className="h-4 w-4" />
           </Button>
         </div>
