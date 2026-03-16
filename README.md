@@ -1,125 +1,96 @@
-# 🚆 IRCTC Train Booking Application
+# 🚆 SIH - IRCTC Train Booking Application
 
-A modern, high-performance web application for Indian railway train booking, live status tracking, and pantry cart ordering.
+> A modern, high-performance IRCTC-style web app to search trains, book tickets, track live status, and order pantry food in one place.
 
-## 🎯 Tech Stack
+<p align="center">
+  <a href="https://irctcprototype.netlify.app/">
+    <img src="https://img.shields.io/badge/Live%20Demo-Netlify-00C7B7?logo=netlify&style=for-the-badge" />
+  </a>
+</p>
 
-- **Frontend:** React.js + TypeScript + Vite
-- **Styling:** Tailwind CSS + ShadCN UI
-- **Backend/API:** Node.js + Express
-- **Data Source:** Real-time IRCTC API integration + JSON mock data
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&style=for-the-badge" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&style=for-the-badge" />
+  <img src="https://img.shields.io/badge/TailwindCSS-3-06B6D4?logo=tailwindcss&style=for-the-badge" />
+  <img src="https://img.shields.io/badge/shadcn%2Fui-Components-000000?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Node.js-Express-339933?logo=node.js&style=for-the-badge" />
+</p>
 
-## ✨ Key Features
+---
+
+## ☁️ Deployment Netlify – [irctcprototype.netlify.app](https://irctcprototype.netlify.app/)
+
+---
+
+## 🧩 Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| 🖥️ **Frontend** | React, TypeScript, Vite |
+| 🎨 **UI & Styling** | Tailwind CSS, ShadCN UI, glassmorphism components |
+| 🧠 **Backend/API** | Node.js, Express |
+| 📡 **Data** | IRCTC real-time API (concept) + JSON mock data |
+
+
+---
+
+## ✨ Core Features
 
 ### 🔍 Train Search & Booking
-- Real-time train search with station autocomplete
-- Live seat availability and fare information
-- Multi-class support (AC, Sleeper, General, Tatkal)
-- Station interchange (swap from/to destinations)
 
-### 🎫 Booking Flow
-- Step-by-step booking process (Search → Trains → Seats → Passenger Details → Payment)
-- Interactive seat selection with coach layout
-- Passenger detail management
+- Station autocomplete with real station data  
+- Live seat availability, fares, and class selection (AC, Sleeper, General, Tatkal)  
+- Swap button to interchange From/To stations  
+- Guided flow: **Search → Trains → Seats → Passenger → Payment**
 
-### 📊 Additional Features
-- **Live Status** - Check train real-time status and delays
-- **PNR Enquiry** - Track booking and ticket status
-- **View Station** - Google Maps & Street View integration
-- **Pantry Cart** - Order food/beverages to your seat
-- **Ask Disha** - AI assistant for travel queries
+### 📊 Travel Utilities
+
+- 🕒 **Live Status** – Real-time train running and delay info  
+- 🔢 **PNR Enquiry** – View ticket and booking status  
+- 📍 **View Station** – Google Maps & Street View integration  
+- 🍱 **Pantry Cart** – Order food and beverages to your seat  
+- 🤖 **Ask Disha** – AI-like assistant for quick travel queries  
+
+---
 
 ## 📁 Project Structure
 
-```
+```bash
 src/
-├── pages/              # Main pages (BookTickets, Home, etc.)
-├── components/         # Reusable components (Navigation, StationSelect, etc.)
-├── hooks/             # Custom React hooks
-├── lib/               # Utility functions
-└── assets/            # Images and static files
+├── pages/          # BookTickets, Home, Status, Pantry, etc.
+├── components/     # Navigation, StationSelect, TrainCard, etc.
+├── hooks/          # Custom React hooks
+├── lib/            # Utils and helpers
+└── assets/         # Images / static files
 
 Backend/
-├── stations.json      # Available railway stations database
-├── trains.json        # Train information
-└── main.js           # Backend entry point
+├── stations.json   # Station master data
+├── trains.json     # Train schedules and details
+└── main.js         # Express backend entry
 ```
 
-## 🚀 Installation & Setup
+---
 
-1. **Install dependencies:**
-   ```bash
-   bun install
-   ```
+## 🎮 Usage Flow
 
-2. **Start development server:**
-   ```bash
-   bun run dev
-   ```
+1. **Search Trains** → Select From/To stations + date + class, then hit **Search**
+2. **Choose Train & Seats** → Pick a train and select seats from the coach layout
+3. **Fill Passenger Details** → Enter name, age, gender, and berth preferences
+4. **Proceed to Payment** → Simulated **UPI / Card / Net Banking** flow
+5. **Order Food** → Use **Pantry Cart** to place food orders to your seat
+6. **Track Journey** → Use **Live Status** and **PNR Enquiry** for live updates
 
-3. **Build for production:**
-   ```bash
-   bun run build
-   ```
+---
 
-## 🎮 How to Use
+## 🎨 UX Highlights
 
-1. **Search Trains** - Go to Home → select From/To stations → choose date → click "Search Trains"
-2. **Select Train & Seats** - Pick a train class, select your seats
-3. **Enter Passenger Details** - Provide name, age, and gender
-4. **Make Payment** - Choose payment method (UPI/Card/Net Banking)
-5. **Book Pantry** - Visit Pantry Cart page to order food
-6. **Check Status** - Use Live Status or PNR Enquiry for booking updates
-
-## 🔧 Key Components
-
-- **StationSelect** - Autocomplete dropdown for station selection with real station data
-- **Navigation** - Top navbar with active route highlighting
-- **BookTickets** - Multi-step booking workflow
-- **Home** - Landing page with multiple enquiry panels
-- **PantryCart** - Food ordering interface with glassy UI design
-
-## 🎨 Design Features
-
-- **Glassmorphic UI** - Transparent, frosted glass effect buttons and cards
-- **Dark Theme** - Professional dark interface with cyan/blue accents
-- **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
-- **Smooth Animations** - Button hover effects and transition animations
-
-## 💡 Recent Updates
-
-- ✅ Station dropdown fetches real data from stations.json
-- ✅ Interchange (swap) button fully functional
-- ✅ All buttons styled with glassy transparent design
-- ✅ Fixed navbar Home button active state
-- ✅ Order confirmation popup with single hop animation
-- ✅ Back button with smooth expand-on-hover animation
-
-### 💨 Fast & Lightweight  
-Built with Vite + React for lightning-fast load times and smooth transitions, ensuring a near-native feel on web.
-
-### 🔐 Secure & Scalable  
-Implements API security best practices, with modular design for future scaling or integration with IRCTC’s production systems.
+- 🧊 Glassmorphic cards and buttons with subtle blur and transparency  
+- 🌙 Dark theme with blue/cyan accents inspired by modern dashboards  
+- 📱 Fully responsive layout (desktop, tablet, and mobile)  
+- 🎞️ Smooth hover states and transitions for a near-native feel  
 
 ---
 
 
-## 🚀 Impact & Vision  
-This project reimagines the IRCTC experience for a new generation of travelers — faster, smarter, and more intuitive.  
-It not only demonstrates how real-time railway data can be harnessed effectively but also sets the foundation for a **next-gen railway ecosystem** integrating AI, predictive systems, and crowd management.
-
----
-
-## 🏆 Built For  
-**Smart India Hackathon (SIH)** — Problem Statement: *Enhancing Railway Passenger Experience through Real-Time Data and Intelligent UI Design.*
-
----
-
-## 💡 Future Enhancements  
-- Integrate **AI-based delay prediction** using historical data.  
-- Enable **voice-based booking assistance** in multiple Indian languages.  
-- Add **offline ticket view mode** and **QR-based verification**.  
-- Include **crowd density visualization** for major routes and stations.  
-- Enable **PNR-based personalized dashboards** for frequent travelers.
-
----
+<p align="center"> Built for <b>Smart India Hackathon (SIH)</b> — reimagining the IRCTC experience for the next generation of Indian rail travelers. </p>
