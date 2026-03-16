@@ -28,6 +28,10 @@ const Navigation = () => {
   ];
 
   const isActive = (path: string) => {
+    if (path === "/") {
+      // Home is active only if on "/" with no panel parameter
+      return location.pathname === "/" && !location.search.includes("panel=");
+    }
     if (path.startsWith("/?panel=")) {
       const targetPanel = path.replace("/?panel=", "");
       return location.pathname === "/" && location.search.includes(`panel=${targetPanel}`);

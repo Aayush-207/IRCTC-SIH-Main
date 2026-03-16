@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Minus, Trash2, ChevronLeft } from "lucide-react";
+import { Plus, Minus, Trash2, ChevronLeft, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import pantryBg from "@/assets/pantry.jpg";
@@ -177,17 +177,18 @@ const PantryCart = () => {
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="fixed top-4 right-4 z-50 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full backdrop-blur-md transition-all duration-200"
+        className="fixed top-6 left-6 z-20 flex items-center gap-0 py-3 pl-3 pr-3 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold shadow-lg transition-all duration-300 overflow-hidden w-12 hover:w-auto group"
         title="Go back"
       >
-        <ChevronLeft className="h-6 w-6" />
+        <ArrowLeft className="h-5 w-5 flex-shrink-0" />
+        <span className="opacity-0 group-hover:opacity-100 whitespace-nowrap text-sm font-medium transition-opacity duration-300 ml-2">Back</span>
       </button>
 
       {/* Order Confirmation Popup */}
       {orderConfirmed && (
         <div className="fixed inset-0 z-40 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOrderConfirmed(false)} />
-          <div className="relative bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border border-green-400/30 animate-bounce">
+          <div className="relative bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border border-green-400/30 animate-hop-once">
             <div className="text-center space-y-4">
               <div className="flex justify-center">
                 <div className="relative h-20 w-20 flex items-center justify-center">
@@ -207,7 +208,10 @@ const PantryCart = () => {
                 <p>Total: <span className="font-semibold text-xl text-yellow-200">₹{getTotalPrice()}</span></p>
               </div>
               <Button 
-                onClick={() => setOrderConfirmed(false)}
+                onClick={() => {
+                  setOrderConfirmed(false);
+                  setCart([]);
+                }}
                 className="w-full mt-4 bg-white text-green-600 hover:bg-white/90 font-bold h-11"
               >
                 Continue Shopping

@@ -20,8 +20,8 @@ type SelectedContext = {
 const COACH_BAY_COUNT = 10;
 const SEATS_PER_BAY = 8;
 const TOTAL_COACH_SEATS = COACH_BAY_COUNT * SEATS_PER_BAY;
-const BACK_BUTTON_CLASS = "bg-white/10 border-white/35 text-white hover:bg-white/20 backdrop-blur-sm";
-const PAYMENT_BUTTON_CLASS = "w-full bg-white/10 border-white/35 text-white hover:bg-white/20 backdrop-blur-sm";
+const BACK_BUTTON_CLASS = "bg-white/10 border border-white/30 text-white hover:bg-cyan-600/20 hover:border-cyan-500/50 backdrop-blur-md transition-all duration-300 shadow-lg";
+const PAYMENT_BUTTON_CLASS = "w-full bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 text-white hover:from-cyan-600/40 hover:to-blue-600/40 hover:border-cyan-400/50 backdrop-blur-md transition-all duration-300 shadow-lg";
 
 const BookTickets = () => {
   const navigate = useNavigate();
@@ -284,8 +284,18 @@ const BookTickets = () => {
         </div>
 
         <div className="flex justify-center">
-          <Button onClick={() => setFormData(prev => ({...prev, from: prev.to, to: prev.from}))} className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold px-4 py-2 rounded-lg">
-            <ArrowLeftRight className="h-4 w-4" />
+          <Button 
+            onClick={() => {
+              setFormData(prev => ({
+                ...prev, 
+                from: prev.to, 
+                to: prev.from
+              }));
+            }} 
+            className="hover:animate-button-hover-pop bg-gradient-to-r from-cyan-600/30 to-blue-600/30 hover:from-cyan-600/50 hover:to-blue-600/50 border border-cyan-500/40 text-cyan-100 font-semibold px-6 py-2 rounded-full backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-cyan-500/50 hover:shadow-2xl cursor-pointer"
+            title="Swap From and To stations"
+          >
+            <ArrowLeftRight className="h-5 w-5" />
           </Button>
         </div>
 
@@ -305,7 +315,7 @@ const BookTickets = () => {
           </div>
         </div>
 
-        <Button onClick={handleSearch} className="w-full bg-gradient-primary">
+        <Button onClick={handleSearch} className="w-full bg-gradient-to-r from-cyan-600/40 to-blue-600/40 hover:from-cyan-600/60 hover:to-blue-600/60 border border-cyan-400/40 text-white font-semibold backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-cyan-500/50">
           Search Trains
         </Button>
       </CardContent>
@@ -366,19 +376,19 @@ const BookTickets = () => {
                   {train.classes.map((cls: any) => (
                     <button
                       key={cls.code}
-                      className={`booking-inner-glass w-full border-2 rounded-xl p-4 text-left transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:ring-2 hover:ring-primary/30 ${
+                      className={`w-full border-2 rounded-xl p-4 text-left transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl backdrop-blur-md ${
                         (cls.availability || '').toLowerCase().includes('wl') || (cls.availability || '').toLowerCase().includes('not')
-                                                     ? 'border-railway-orange hover:bg-railway-orange/10 hover:border-railway-orange hover:ring-railway-orange/30'
-                           : 'border-success hover:bg-success/10 hover:border-success hover:ring-success/30'
+                          ? 'bg-gradient-to-br from-orange-600/20 to-red-600/20 border-orange-500/40 hover:from-orange-600/30 hover:to-red-600/30 hover:border-orange-500/60 hover:shadow-orange-500/30'
+                          : 'bg-gradient-to-br from-cyan-600/20 to-blue-600/20 border-cyan-500/40 hover:from-cyan-600/30 hover:to-blue-600/30 hover:border-cyan-500/60 hover:shadow-cyan-500/30'
                       }`}
                       onClick={() => handleClassClick(train, cls.code)}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="font-bold text-lg">{cls.code}</div>
-                        <div className="text-lg font-semibold text-primary">{cls.fareText}</div>
+                        <div className="font-bold text-lg text-white">{cls.code}</div>
+                        <div className="text-lg font-semibold text-cyan-300">{cls.fareText}</div>
                       </div>
-                      <div className="text-sm mt-2 font-medium">{cls.availability}</div>
-                      <div className="text-xs text-muted-foreground mt-1">Chance: {cls.prediction}</div>
+                      <div className="text-sm mt-2 font-medium text-gray-100">{cls.availability}</div>
+                      <div className="text-xs text-cyan-300/70 mt-1">Chance: {cls.prediction}</div>
                     </button>
                   ))}
                 </div>
@@ -590,7 +600,7 @@ const BookTickets = () => {
               }
               setStep('payment');
             }}
-            className="w-full"
+            className="w-full bg-gradient-to-r from-cyan-600/40 to-blue-600/40 hover:from-cyan-600/60 hover:to-blue-600/60 border border-cyan-400/40 text-white font-semibold backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={formData.selectedSeats.length === 0}
           >
             Continue to Payment
@@ -667,7 +677,7 @@ const BookTickets = () => {
           </div>
         ))}
 
-        <Button onClick={() => setStep('payment')} className="w-full">
+        <Button onClick={() => setStep('payment')} className="w-full bg-gradient-to-r from-cyan-600/40 to-blue-600/40 hover:from-cyan-600/60 hover:to-blue-600/60 border border-cyan-400/40 text-white font-semibold backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-cyan-500/50">
           Continue to Payment
         </Button>
       </CardContent>
@@ -720,13 +730,13 @@ const BookTickets = () => {
 
         <div className="grid md:grid-cols-3 gap-4">
           <Button variant="outline" className={PAYMENT_BUTTON_CLASS}>
-            Pay with UPI
+            💳 Pay with UPI
           </Button>
           <Button variant="outline" className={PAYMENT_BUTTON_CLASS}>
-            Debit/Credit Card
+            🏦 Debit/Credit Card
           </Button>
           <Button variant="outline" className={PAYMENT_BUTTON_CLASS}>
-            Net Banking
+            🌐 Net Banking
           </Button>
         </div>
       </CardContent>
