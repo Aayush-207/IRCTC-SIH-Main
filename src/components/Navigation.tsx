@@ -52,13 +52,13 @@ const Navigation = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-2">
+          <div className="hidden lg:flex items-center space-x-1 bg-black/20 backdrop-blur-md rounded-full px-1.5 py-1.5 border border-white/10 shadow-sm">
             {navItems.map((item) => (
               <Link key={item.href} to={item.href}>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`text-white hover:bg-black/35 ${isActive(item.href) ? "bg-black/45" : ""}`}
+                  className={`text-white hover:text-white rounded-full transition-all duration-300 ${isActive(item.href) ? "bg-white/20 hover:bg-white/30 font-semibold shadow-sm" : "hover:bg-white/10"}`}
                 >
                   {item.label}
                 </Button>

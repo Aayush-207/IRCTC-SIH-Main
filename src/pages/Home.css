@@ -169,6 +169,13 @@
 	font-size: 0.82rem;
 	color: #ffffff;
 	max-width: 9.5rem;
+	color-scheme: dark;
+}
+
+.woox-date-input::-webkit-calendar-picker-indicator {
+	filter: invert(1) brightness(2) !important;
+	opacity: 1 !important;
+	cursor: pointer;
 }
 
 .woox-date-text {
@@ -177,6 +184,21 @@
 	font-size: 0.82rem;
 	line-height: 1.1;
 	text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+	width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.05);
+	border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.3);
 }
 
 .woox-search-wrap {

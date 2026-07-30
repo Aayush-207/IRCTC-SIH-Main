@@ -242,67 +242,6 @@ const Home = () => {
           </div>
         ))}
 
-        <div className={`woox-banner-inner container mx-auto px-4 ${isOverlayOpen ? "home-content-leaving" : "home-content-entered"}`}>
-          <div className="woox-main-caption">
-            <h2>Book Train Tickets</h2>
-            <h1>Made Simple</h1>
-            <p>Fast, reliable, and secure train booking experience across India</p>
-          </div>
-
-          <div className="woox-more-info-wrap">
-            <div className="woox-more-info">
-              <div className="woox-booking-grid">
-                <div>
-                  <span className="woox-field-label">From</span>
-                  <div className="woox-field-wrap">
-                    <StationSelect
-                      label=""
-                      placeholder="Type name or code"
-                      valueCode={from}
-                      onChangeCode={setFrom}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <span className="woox-field-label">To</span>
-                  <div className="woox-field-wrap">
-                    <StationSelect
-                      label=""
-                      placeholder="Type name or code"
-                      valueCode={to}
-                      onChangeCode={setTo}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <span className="woox-field-label">Date of Journey</span>
-                  <div className="woox-date-row">
-                    <button className="woox-date-pill" onClick={setTomorrow} type="button">
-                      Tomorrow
-                    </button>
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="woox-date-input"
-                    />
-                  </div>
-                  <p className="woox-date-text">{toDisplayDate(date)}</p>
-                </div>
-
-                <div className="woox-search-wrap">
-                  <Button onClick={handleSearch} className="woox-search-button" type="button">
-                    <Search className="h-5 w-5 mr-2" />
-                    Search Trains
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <nav className="woox-controls" aria-label="Hero slides" style={{ ["--slide-duration" as string]: `${SLIDE_DURATION_MS}ms` }}>
           {banners.map((_, index) => (
             <button
@@ -321,12 +260,83 @@ const Home = () => {
           ))}
         </nav>
 
-        <AnimatePresence mode="wait" initial={false} custom={panelDirection}>
-          {activePanel && (
+        <AnimatePresence initial={false} custom={panelDirection}>
+          {activePanel === null ? (
+            <motion.div
+              key="home"
+              custom={panelDirection}
+              className="absolute inset-0 z-20 pointer-events-none"
+              initial={{ opacity: 0, x: panelDirection > 0 ? -130 : 130 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: panelDirection > 0 ? 130 : -130 }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="woox-banner-inner container mx-auto px-4 pointer-events-auto h-full">
+                <div className="woox-main-caption">
+                  <h2>Book Train Tickets</h2>
+                  <h1>Made Simple</h1>
+                  <p>Fast, reliable, and secure train booking experience across India</p>
+                </div>
+
+                <div className="woox-more-info-wrap">
+                  <div className="woox-more-info">
+                    <div className="woox-booking-grid">
+                      <div>
+                        <span className="woox-field-label">From</span>
+                        <div className="woox-field-wrap">
+                          <StationSelect
+                            label=""
+                            placeholder="Type name or code"
+                            valueCode={from}
+                            onChangeCode={setFrom}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="woox-field-label">To</span>
+                        <div className="woox-field-wrap">
+                          <StationSelect
+                            label=""
+                            placeholder="Type name or code"
+                            valueCode={to}
+                            onChangeCode={setTo}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="woox-field-label">Date of Journey</span>
+                        <div className="woox-date-row">
+                          <button className="woox-date-pill" onClick={setTomorrow} type="button">
+                            Tomorrow
+                          </button>
+                          <input
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="woox-date-input"
+                          />
+                        </div>
+                        <p className="woox-date-text">{toDisplayDate(date)}</p>
+                      </div>
+
+                      <div className="woox-search-wrap">
+                        <Button onClick={handleSearch} className="woox-search-button" type="button">
+                          <Search className="h-5 w-5 mr-2" />
+                          Search Trains
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
             <motion.div
               key={activePanel}
               custom={panelDirection}
-              className="live-panel-wrap"
+              className="live-panel-wrap absolute inset-0 z-20"
               initial={{ opacity: 0, x: panelDirection > 0 ? 130 : -130 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: panelDirection > 0 ? -130 : 130 }}

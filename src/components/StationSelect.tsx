@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { MapPin } from "lucide-react";
+import stationsData from "../../Backend/stations.json";
 
 export type StationRecord = {
   stnName: string;
@@ -19,47 +21,47 @@ type StationSelectProps = {
 export default function StationSelect({ label, placeholder, valueCode, onChangeCode }: StationSelectProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [stations, setStations] = useState<StationRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch stations from API
-  useEffect(() => {
-    const fetchStations = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/Backend/stations.json');
-        const data = await response.json();
-        
-        const raw = (Array.isArray(data?.stations) ? data.stations : data) as any[];
-        const parsed = raw.map((s: any) => ({
-          stnName: s.stnName || s.name || s.station_name || "",
-          stnCode: s.stnCode || s.code || s.station_code || "",
-          stnCity: s.stnCity || s.city || s.district || "",
-        })).filter((s: StationRecord) => s.stnCode && s.stnName);
-        
-        setStations(parsed);
-        setLoading(false);
-      } catch (error) {
-        console.error("Failed to fetch stations:", error);
-        setLoading(false);
-      }
-    };
-
-    fetchStations();
+  
+  // Directly load and parse stations from the imported JSON
+  const stations: StationRecord[] = useMemo(() => {
+    const raw = (Array.isArray((stationsData as any)?.stations) ? (stationsData as any).stations : stationsData) as any[];
+    return raw.map((s: any) => ({
+      stnName: s.stnName || s.name || s.station_name || "",
+      stnCode: s.stnCode || s.code || s.station_code || "",
+      stnCity: s.stnCity || s.city || s.district || "",
+    })).filter((s: StationRecord) => s.stnCode && s.stnName);
   }, []);
 
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) {
-      // When query is empty, return first 15 stations
-      return stations.slice(0, 15);
+      return stations.slice(0, 10);
     }
-    // Filter stations based on query
-    return stations.filter((s) =>
-      s.stnName.toLowerCase().includes(q) ||
-      s.stnCode.toLowerCase().includes(q) ||
-      (s.stnCity || "").toLowerCase().includes(q)
-    ).slice(0, 15);
+    
+    // Prioritize stations that start with the query
+    const exactMatches: StationRecord[] = [];
+    const startsWithMatches: StationRecord[] = [];
+    const includesMatches: StationRecord[] = [];
+
+    for (const s of stations) {
+      const name = s.stnName.toLowerCase();
+      const code = s.stnCode.toLowerCase();
+      
+      if (code === q || name === q) {
+        exactMatches.push(s);
+      } else if (name.startsWith(q) || code.startsWith(q)) {
+        startsWithMatches.push(s);
+      } else if (name.includes(q) || code.includes(q) || (s.stnCity && s.stnCity.toLowerCase().includes(q))) {
+        includesMatches.push(s);
+      }
+
+      // Break early if we have enough results (performance optimization)
+      if (exactMatches.length + startsWithMatches.length + includesMatches.length > 30) {
+        break;
+      }
+    }
+
+    return [...exactMatches, ...startsWithMatches, ...includesMatches].slice(0, 8);
   }, [query, stations]);
 
   useEffect(() => {
@@ -73,7 +75,6 @@ export default function StationSelect({ label, placeholder, valueCode, onChangeC
     return () => document.removeEventListener("click", handler);
   }, []);
 
-  // Reset query when valueCode changes (e.g., from swap button)
   useEffect(() => {
     const matchingStation = stations.find(s => s.stnCode === valueCode);
     if (matchingStation && query !== `${matchingStation.stnName} (${matchingStation.stnCode})`) {
@@ -82,43 +83,40 @@ export default function StationSelect({ label, placeholder, valueCode, onChangeC
   }, [valueCode, stations]);
 
   return (
-    <div data-station-select-root>
-      <Label>{label}</Label>
+    <div data-station-select-root className="relative">
+      {label && <Label>{label}</Label>}
       <div className="relative">
         <Input
-          placeholder={loading ? "Loading stations..." : (placeholder || "Type station name or code")}
+          placeholder={placeholder || "Type station name or code"}
           value={query || valueCode}
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
-          disabled={loading}
+          onClick={() => setOpen(!open)}
+          className="bg-white/95 text-slate-900 border-white/40 focus:border-cyan-500 shadow-sm placeholder:text-slate-400 font-medium cursor-pointer"
         />
-        {loading && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <div className="animate-spin h-4 w-4 border-2 border-cyan-600 border-t-transparent rounded-full"></div>
-          </div>
-        )}
-        {open && suggestions.length > 0 && !loading && (
-          <Card className="absolute z-20 w-full mt-1 max-h-72 overflow-auto bg-gradient-to-br from-slate-900 to-slate-800 border border-cyan-500/30 shadow-2xl backdrop-blur-md">
-            <div className="p-3 text-xs font-semibold text-cyan-300 bg-black/20 border-b border-cyan-500/20">
-              {`📍 Available Stations - ${suggestions.length} result(s)`}
-            </div>
-            <div>
+        {open && suggestions.length > 0 && (
+          <Card className="absolute z-50 w-full mt-2 overflow-y-auto max-h-60 bg-white/95 backdrop-blur-xl border border-slate-200/60 shadow-xl rounded-xl custom-scrollbar">
+            <div className="py-1">
               {suggestions.map((s) => (
                 <button
                   key={s.stnCode + s.stnName}
                   type="button"
-                  className="w-full text-left px-4 py-3 hover:bg-cyan-600/20 border-b border-slate-700/50 text-white transition-all duration-200 hover:border-cyan-500/30 group"
+                  className="w-full text-left px-4 py-3 hover:bg-slate-100/80 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-0 group"
                   onClick={() => {
                     onChangeCode(s.stnCode);
                     setQuery(`${s.stnName} (${s.stnCode})`);
                     setOpen(false);
                   }}
                 >
-                  <div className="font-semibold text-white group-hover:text-cyan-200">{s.stnName}</div>
-                  <div className="text-xs text-cyan-300/70 group-hover:text-cyan-200">{s.stnCode}{s.stnCity ? ` • ${s.stnCity}` : ''}</div>
+                  <div className="bg-slate-100 p-2 rounded-full group-hover:bg-cyan-100 group-hover:text-cyan-700 text-slate-400 transition-colors">
+                    <MapPin className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-slate-700 text-sm">{s.stnName}</div>
+                    <div className="text-xs font-semibold text-slate-500">{s.stnCode}{s.stnCity ? ` • ${s.stnCity}` : ''}</div>
+                  </div>
                 </button>
               ))}
             </div>
