@@ -23,7 +23,7 @@ const PNRStatus = () => {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'x-rapidapi-key': 'b0075d9fa8msh81b2609e08877a8p14ff09jsn738ea7672cad',
+          'x-rapidapi-key': import.meta.env.VITE_RAPIDAPI_KEY,
           'x-rapidapi-host': 'irctc-indian-railway-pnr-status.p.rapidapi.com'
         }
       });
