@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import AskDisha from "@/pages/AskDisha";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import ChatbotUI from "@/components/ChatbotUI";
 import { MessageCircle } from "lucide-react";
 
 const AskDishaFab = () => {
@@ -24,12 +24,9 @@ const AskDishaFab = () => {
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="p-0 w-[90vw] sm:w-[28rem] max-w-[100vw]">
-          <SheetHeader className="px-4 py-3 border-b">
-            <SheetTitle>Ask Disha 2.0</SheetTitle>
-          </SheetHeader>
-          <div className="h-[calc(100vh-3.5rem)] overflow-hidden">
-            <AskDisha />
+        <SheetContent side="right" className="p-0 w-[90vw] sm:w-[28rem] max-w-[100vw] bg-slate-50 border-l-0">
+          <div className="h-[100dvh] overflow-hidden flex flex-col">
+            <ChatbotUI isFullScreen={false} />
           </div>
         </SheetContent>
       </Sheet>
